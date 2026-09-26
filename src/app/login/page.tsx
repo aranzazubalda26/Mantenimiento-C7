@@ -6,6 +6,10 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
+  const loginRapido =
+    process.env.NODE_ENV === "development" &&
+    Boolean(process.env.DEV_LOGIN_EMAIL && process.env.DEV_LOGIN_PASSWORD);
+
   return (
     <main className="flex flex-1 flex-col justify-center px-6 py-12 sm:items-center">
       <div className="w-full sm:max-w-sm">
@@ -32,7 +36,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <LoginForm />
+        <LoginForm loginRapido={loginRapido} />
       </div>
     </main>
   );

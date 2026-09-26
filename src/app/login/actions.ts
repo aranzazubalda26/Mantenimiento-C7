@@ -46,6 +46,27 @@ export async function login(
   redirect("/");
 }
 
+// Inicio rapido para desarrollo: usa DEV_LOGIN_EMAIL/DEV_LOGIN_PASSWORD de .env.local.
+// En produccion no hace nada aunque se llame directamente.
+export async function loginRapido(): Promise<LoginState> {
+  const email = process.env.DEV_LOGIN_EMAIL;
+  const password = process.env.DEV_LOGIN_PASSWORD;
+
+  if (process.env.NODE_ENV !== "development" || !email || !password) {
+    return { error: "El inicio rápido no está disponible.", email: "" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    return { error: mensajeDeError(error.code, error.message), email: "" };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

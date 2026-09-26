@@ -65,6 +65,14 @@ body {
       hover:bg-primary-hover active:scale-[0.99] disabled:opacity-60;
   }
 
+  /* Botones que solo existen en desarrollo: borde punteado para distinguirlos */
+  .btn-dev {
+    @apply flex h-12 w-full items-center justify-center rounded-xl border-2
+      border-dashed border-amber-500/70 text-base font-semibold text-amber-600
+      transition-colors hover:bg-amber-500/10 disabled:opacity-60
+      dark:text-amber-400;
+  }
+
   .btn-secondary {
     @apply flex h-10 items-center justify-center rounded-xl border border-border
       bg-surface px-4 text-sm font-medium transition-colors hover:bg-background;
