@@ -12,7 +12,7 @@ import {
 import { ListaOrdenes, type OrdenLista } from "@/components/lista-ordenes";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import { saludo } from "@/lib/fechas";
-import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
+import { ESTADOS, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 
 type Resumida = { id: number; escuela_id: number; estado: Estado; prioridad: Prioridad };
@@ -30,9 +30,9 @@ const SELECT_LISTA =
 
 // Colores de la barrita por estado (mismos que las pastillas)
 const COLOR_ESTADO: Record<Estado, string> = {
-  pendiente: "#F79009",
+  solicitada: "#F79009",
   en_proceso: "#2E6BE6",
-  finalizada: "#D0D5DD",
+  cerrada: "#D0D5DD",
 };
 
 export default async function Home() {
@@ -58,7 +58,7 @@ export default async function Home() {
     supabase
       .from("ordenes_trabajo")
       .select("id, descripcion, prioridad, ubicacion, escuela_id, escuelas(direccion)")
-      .eq("estado", "pendiente")
+      .eq("estado", "solicitada")
       .in("prioridad", ["urgente", "alta"])
       .order("prioridad", { ascending: false }) // "urgente" > "alta" alfabeticamente
       .order("created_at", { ascending: true })
@@ -69,16 +69,16 @@ export default async function Home() {
 
   const ordenes = todas ?? [];
   const cuenta = (f: (o: Resumida) => boolean) => ordenes.filter(f).length;
-  const nUrgentes = cuenta((o) => o.estado === "pendiente" && o.prioridad === "urgente");
-  const nPendientes = cuenta((o) => o.estado === "pendiente");
+  const nUrgentes = cuenta((o) => o.estado === "solicitada" && o.prioridad === "urgente");
+  const nSolicitadas = cuenta((o) => o.estado === "solicitada");
   const nEnProceso = cuenta((o) => o.estado === "en_proceso");
-  const nFinalizadas = cuenta((o) => o.estado === "finalizada");
+  const nCerradas = cuenta((o) => o.estado === "cerrada");
 
   const resumen = [
-    { n: nUrgentes, titulo: "Urgentes sin empezar", sub: nUrgentes ? "Necesitan atención ya" : "Todo bajo control", color: "#B42318", fondo: "#FEE4E2", icono: <IconoAlerta /> },
-    { n: nPendientes, titulo: "Pendientes", sub: nPendientes ? "Todavía no se empezaron" : "Nada pendiente", color: "#93370D", fondo: "#FEF0C7", icono: <IconoTareas /> },
+    { n: nUrgentes, titulo: "Urgentes solicitadas", sub: nUrgentes ? "Necesitan atención ya" : "Todo bajo control", color: "#B42318", fondo: "#FEE4E2", icono: <IconoAlerta /> },
+    { n: nSolicitadas, titulo: "Solicitadas", sub: nSolicitadas ? "Todavía no se empezaron" : "Nada pendiente", color: "#93370D", fondo: "#FEF0C7", icono: <IconoTareas /> },
     { n: nEnProceso, titulo: "En proceso", sub: nEnProceso ? "Se están trabajando" : "Nada en curso", color: "#1E40AF", fondo: "#DCE8FD", icono: <IconoLlave /> },
-    { n: nFinalizadas, titulo: "Finalizadas", sub: "Desde el inicio", color: "#475467", fondo: "#EEF0F3", icono: <IconoOk /> },
+    { n: nCerradas, titulo: "Cerradas", sub: "Desde el inicio", color: "#475467", fondo: "#EEF0F3", icono: <IconoOk /> },
   ];
 
   const titular = !usuario.rol
@@ -127,9 +127,9 @@ export default async function Home() {
 
             <div className="grid items-start gap-5 min-[1180px]:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
               <div className="flex min-w-0 flex-col gap-5">
-                <Panel titulo="Urgentes y altas sin empezar" contador={urgentes?.length}>
+                <Panel titulo="Urgentes y altas solicitadas" contador={urgentes?.length}>
                   {!urgentes?.length ? (
-                    <p className="px-5 py-6 text-sm text-muted">No hay nada urgente sin empezar.</p>
+                    <p className="px-5 py-6 text-sm text-muted">No hay nada urgente esperando.</p>
                   ) : (
                     <ul>
                       {urgentes.map((o) => (
@@ -187,8 +187,8 @@ export default async function Home() {
                       {escuelas.map((e) => {
                         const suyas = ordenes.filter((o) => o.escuela_id === e.id);
                         const n = (est: Estado) => suyas.filter((o) => o.estado === est).length;
-                        const abiertas = suyas.length - n("finalizada");
-                        const urgente = suyas.some((o) => o.estado === "pendiente" && o.prioridad === "urgente");
+                        const abiertas = suyas.length - n("cerrada");
+                        const urgente = suyas.some((o) => o.estado === "solicitada" && o.prioridad === "urgente");
                         return (
                           <div key={e.id} className="flex flex-col gap-1.5 rounded-xl border border-border p-3.5">
                             <span className="esc-num">{e.id}</span>
@@ -198,7 +198,7 @@ export default async function Home() {
                               {abiertas ? `${abiertas} ${abiertas === 1 ? "orden abierta" : "órdenes abiertas"}` : "Sin órdenes abiertas"}
                             </span>
                             <span className="mt-1 flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-background">
-                              {(["pendiente", "en_proceso", "finalizada"] as Estado[]).map((est) =>
+                              {ESTADOS.map((est) =>
                                 n(est) ? <span key={est} style={{ flex: n(est), background: COLOR_ESTADO[est] }} /> : null,
                               )}
                             </span>
@@ -212,10 +212,10 @@ export default async function Home() {
                       })}
                     </div>
                     <div className="flex flex-wrap gap-3.5 px-4 pb-4 pt-1.5 text-[12.5px] text-muted pc:px-5">
-                      {(["pendiente", "en_proceso", "finalizada"] as Estado[]).map((est) => (
+                      {ESTADOS.map((est) => (
                         <span key={est} className="inline-flex items-center gap-1.5">
                           <i className="inline-block size-2.5 rounded-[3px]" style={{ background: COLOR_ESTADO[est] }} />
-                          {est === "pendiente" ? "Pendientes" : est === "en_proceso" ? "En proceso" : "Finalizadas"}
+                          {est === "solicitada" ? "Solicitadas" : est === "en_proceso" ? "En proceso" : "Cerradas"}
                         </span>
                       ))}
                     </div>

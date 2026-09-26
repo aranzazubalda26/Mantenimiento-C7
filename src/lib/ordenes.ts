@@ -10,13 +10,14 @@ export const PRIORIDAD_LABEL: Record<Prioridad, string> = {
   urgente: "Urgente",
 };
 
-export const ESTADOS = ["pendiente", "en_proceso", "finalizada"] as const;
+// solicitada -> en_proceso -> cerrada (la cierra el supervisor; la base guarda cuando y quien)
+export const ESTADOS = ["solicitada", "en_proceso", "cerrada"] as const;
 export type Estado = (typeof ESTADOS)[number];
 
 export const ESTADO_LABEL: Record<Estado, string> = {
-  pendiente: "Pendiente",
+  solicitada: "Solicitada",
   en_proceso: "En proceso",
-  finalizada: "Finalizada",
+  cerrada: "Cerrada",
 };
 
 // Sugerencias para "Dónde, dentro de la escuela" (se puede escribir cualquier otra cosa)

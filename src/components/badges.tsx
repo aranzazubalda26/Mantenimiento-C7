@@ -7,9 +7,9 @@ import {
 
 // Colores del diseño de referencia
 const ESTADO_CLASES: Record<Estado, string> = {
-  pendiente: "bg-[#fef0c7] text-[#93370d]",
+  solicitada: "bg-[#fef0c7] text-[#93370d]",
   en_proceso: "bg-[#dce8fd] text-[#1e40af]",
-  finalizada: "bg-[#eef0f3] text-[#475467]",
+  cerrada: "bg-[#eef0f3] text-[#475467]",
 };
 
 const PRIORIDAD_CLASES: Record<Prioridad, string> = {

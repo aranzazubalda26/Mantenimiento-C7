@@ -5,10 +5,11 @@ import { AppHeader, Pagina } from "@/components/app-header";
 import { EstadoBadge, PrioridadBadge } from "@/components/badges";
 import { IconoAtras, IconoLugar, IconoOk } from "@/components/iconos";
 import { getUsuario } from "@/lib/auth";
-import { fechaCorta, formatFecha, formatFechaHora, formatHora } from "@/lib/fechas";
+import { duracion, fechaCorta, formatFecha, formatFechaDe, formatFechaHora, formatHora } from "@/lib/fechas";
 import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 import { nombreCompleto } from "@/lib/usuarios";
+import { CambiarEstado } from "./cambiar-estado";
 
 export const metadata: Metadata = { title: "Orden · Mantenimiento C7" };
 
@@ -20,13 +21,15 @@ type Orden = {
   estado: Estado;
   ubicacion: string;
   created_at: string;
-  escuelas: { id: number; direccion: string; nombre: string | null } | null;
+  cerrada_at: string | null;
+  escuelas: { id: number; direccion: string; nombre: string | null; supervisor_id: string } | null;
   creador: { nombre: string; apellido: string } | null;
+  cerrador: { nombre: string; apellido: string } | null;
   orden_fotos: { id: number; path: string }[];
 };
 
 export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
-  await getUsuario();
+  const usuario = await getUsuario();
   const { id } = await props.params;
   const { creada } = await props.searchParams;
   if (!/^\d+$/.test(id)) notFound();
@@ -36,7 +39,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   const { data: orden } = await supabase
     .from("ordenes_trabajo")
     .select(
-      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, escuelas(id, nombre, direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido), orden_fotos(id, path)",
+      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, cerrada_at, escuelas(id, nombre, direccion, supervisor_id), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido), cerrador:perfiles!ordenes_trabajo_cerrada_por_fkey(nombre, apellido), orden_fotos(id, path)",
     )
     .eq("id", Number(id))
     .maybeSingle<Orden>();
@@ -48,6 +51,11 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
         .from("ordenes-fotos")
         .createSignedUrls(orden.orden_fotos.map((f) => f.path), 60 * 60)
     : { data: [] };
+
+  // Cambian el estado: el supervisor de la escuela y el admin (la base tambien lo exige)
+  const esAdmin = usuario.rol === "admin";
+  const puedeCambiarEstado =
+    esAdmin || (usuario.rol === "supervisor" && orden.escuelas?.supervisor_id === usuario.id);
 
   const iniciales = orden.creador
     ? `${orden.creador.nombre[0] ?? ""}${orden.creador.apellido[0] ?? ""}`.toUpperCase()
@@ -110,6 +118,21 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
                 </div>
               </div>
 
+              {orden.estado === "cerrada" && orden.cerrada_at && (
+                <div className="flex items-start gap-3 rounded-[10px] bg-[#eef0f3] px-3.5 py-3">
+                  <IconoOk className="mt-0.5 size-5 text-[#475467]" />
+                  <div>
+                    <p className="font-semibold">
+                      Cerrada el {formatFechaDe(orden.cerrada_at)} a las {formatHora(orden.cerrada_at)}
+                    </p>
+                    <p className="text-[13.5px] text-muted">
+                      {orden.cerrador && `Por ${nombreCompleto(orden.cerrador)} · `}
+                      {duracion(orden.created_at, orden.cerrada_at)} desde que se cargó
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {!!urls?.length && (
                 <div>
                   <p className="dato-titulo">Fotos ({urls.length})</p>
@@ -134,6 +157,12 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
 
               <p className="text-xs text-muted">Creada el {formatFechaHora(orden.created_at)}</p>
             </div>
+
+            {puedeCambiarEstado && (orden.estado !== "cerrada" || esAdmin) && (
+              <div className="border-t border-border p-[18px] pb-[calc(18px+env(safe-area-inset-bottom))] pc:p-5">
+                <CambiarEstado ordenId={orden.id} estado={orden.estado} esAdmin={esAdmin} />
+              </div>
+            )}
           </article>
         </div>
       </Pagina>

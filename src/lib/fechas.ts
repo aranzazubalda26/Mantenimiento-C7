@@ -46,6 +46,27 @@ export function formatFecha(iso: string) {
   return `${d}/${m}/${a}`;
 }
 
+// Fecha (dd/mm/aaaa) de un momento, en hora de Argentina
+export function formatFechaDe(ts: string) {
+  return new Date(ts).toLocaleDateString("es-AR", {
+    timeZone: TZ,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+// Tiempo entre dos momentos: "15 min", "3 h 20 min", "2 días 3 h"
+export function duracion(desde: string, hasta: string) {
+  const min = Math.max(0, Math.round((new Date(hasta).getTime() - new Date(desde).getTime()) / 60000));
+  if (min < 1) return "menos de 1 min";
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} h${min % 60 ? ` ${min % 60} min` : ""}`;
+  const d = Math.floor(h / 24);
+  return `${d} ${d === 1 ? "día" : "días"}${h % 24 ? ` ${h % 24} h` : ""}`;
+}
+
 // "16:46"
 export function formatHora(ts: string) {
   return new Date(ts).toLocaleTimeString("es-AR", {
@@ -56,13 +77,7 @@ export function formatHora(ts: string) {
   });
 }
 
+// "26/09/2026 a las 18:22"
 export function formatFechaHora(ts: string) {
-  return new Date(ts).toLocaleString("es-AR", {
-    timeZone: TZ,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return `${formatFechaDe(ts)} a las ${formatHora(ts)}`;
 }
