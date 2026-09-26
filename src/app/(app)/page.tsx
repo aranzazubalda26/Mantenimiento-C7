@@ -6,7 +6,6 @@ import { formatFecha } from "@/lib/fechas";
 import type { Estado, Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 import { ROL_LABEL } from "@/lib/usuarios";
-import { logout } from "./login/actions";
 
 type OrdenFila = {
   id: number;
@@ -23,8 +22,8 @@ export default async function Home() {
   const esAdmin = usuario.rol === "admin";
   const supabase = await createClient();
 
-  // RLS filtra: el admin recibe todas, el inspector solo las suyas
-  // Supervisor/inspector: las de sus escuelas (y las que creo el inspector)
+  // RLS filtra: el admin recibe todas; supervisor/inspector las de sus escuelas
+  // (y el inspector ademas las que creo)
   const [{ data: ordenes }, { count: cantEscuelas }, { count: cantUsuarios }] = await Promise.all([
     supabase
       .from("ordenes_trabajo")
@@ -42,13 +41,7 @@ export default async function Home() {
 
   return (
     <>
-      <AppHeader titulo="Mantenimiento C7">
-        <form action={logout}>
-          <button type="submit" className="btn-secondary">
-            Salir
-          </button>
-        </form>
-      </AppHeader>
+      <AppHeader titulo="Inicio" />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-5">
         <div>

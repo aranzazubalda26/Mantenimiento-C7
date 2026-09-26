@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Rol } from "@/lib/usuarios";
 
@@ -14,7 +15,8 @@ export type Usuario = {
 
 // Usuario logueado verificado (getClaims valida la firma del token).
 // El rol sale de la tabla perfiles, no del token. Sin sesion redirige a /login.
-export async function getUsuario(): Promise<Usuario> {
+// cache(): el layout y la pagina lo piden en el mismo request y se consulta una sola vez.
+export const getUsuario = cache(async (): Promise<Usuario> => {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
@@ -33,7 +35,7 @@ export async function getUsuario(): Promise<Usuario> {
     apellido: perfil?.apellido ?? "",
     rol: perfil?.activo ? (perfil.rol as Rol) : null,
   };
-}
+});
 
 export async function requireAdmin(): Promise<Usuario> {
   const usuario = await getUsuario();

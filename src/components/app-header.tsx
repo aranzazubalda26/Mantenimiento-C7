@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { BotonMenu } from "./shell";
 
-// Barra superior fija. Con `volverA` muestra la flecha para volver.
+// Barra superior fija. Con `volverA` muestra la flecha para volver;
+// si no, en el celular muestra el boton del menu.
 export function AppHeader({
   titulo,
   volverA,
@@ -13,7 +15,7 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-2 px-4">
-        {volverA && (
+        {volverA ? (
           <Link
             href={volverA}
             aria-label="Volver"
@@ -32,6 +34,8 @@ export function AppHeader({
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Link>
+        ) : (
+          <BotonMenu />
         )}
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight">
           {titulo}

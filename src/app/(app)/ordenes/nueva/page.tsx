@@ -24,7 +24,7 @@ export default async function NuevaOrdenPage() {
 
   return (
     <>
-      <AppHeader titulo="Nueva orden" volverA="/" />
+      <AppHeader titulo="Nueva orden" />
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-5">
         <NuevaOrdenForm
           escuelas={escuelas ?? []}

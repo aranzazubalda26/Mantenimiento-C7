@@ -36,7 +36,7 @@ export default async function UsuariosPage() {
 
   return (
     <>
-      <AppHeader titulo="Usuarios" volverA="/" />
+      <AppHeader titulo="Usuarios" />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-5">
         <UsuariosAdmin usuarios={usuarios} miId={admin.id} />
       </main>
