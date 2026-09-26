@@ -16,7 +16,7 @@ export default async function EscuelasPage() {
       .select(
         "id, direccion, nombre, activa, supervisor_id, inspector_id, supervisor:perfiles!escuelas_supervisor_id_fkey(nombre, apellido), inspector:perfiles!escuelas_inspector_id_fkey(nombre, apellido)",
       )
-      .order("direccion")
+      .order("id")
       .returns<Escuela[]>(),
     supabase
       .from("perfiles")

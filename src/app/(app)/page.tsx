@@ -41,7 +41,7 @@ export default async function Home() {
   const esAdmin = usuario.rol === "admin";
 
   // Escuelas del tablero: el admin ve todas; el resto, las asignadas
-  let qEscuelas = supabase.from("escuelas").select("id, direccion, nombre").eq("activa", true).order("direccion");
+  let qEscuelas = supabase.from("escuelas").select("id, direccion, nombre").eq("activa", true).order("id");
   if (!esAdmin) {
     qEscuelas = qEscuelas.or(`inspector_id.eq.${usuario.id},supervisor_id.eq.${usuario.id}`);
   }

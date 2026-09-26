@@ -26,7 +26,13 @@ export function EscuelaSelect({
   const seleccionada = escuelas.find((e) => e.id === value) ?? null;
 
   const filtradas = useMemo(
-    () => escuelas.filter((e) => coincide(`${e.direccion} ${e.nombre ?? ""}`, busqueda)),
+    () => {
+      const lista = escuelas.filter((e) => coincide(`${e.id} ${e.direccion} ${e.nombre ?? ""}`, busqueda));
+      // Si escriben solo un numero, la escuela con ese numero va primero
+      // (buscar "56" tambien encuentra "Avelino Diaz 2356", pero la N° 56 es la que buscan)
+      const num = /^\d+$/.test(busqueda.trim()) ? Number(busqueda.trim()) : null;
+      return num === null ? lista : [...lista.filter((e) => e.id === num), ...lista.filter((e) => e.id !== num)];
+    },
     [escuelas, busqueda],
   );
 
@@ -78,7 +84,7 @@ export function EscuelaSelect({
               autoFocus
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por dirección o nombre…"
+              placeholder="Buscar por número o dirección…"
               aria-label="Buscar escuela"
               className="h-11 w-full rounded-lg bg-background px-3 text-base outline-none focus:bg-surface focus:ring-2 focus:ring-primary/20"
             />

@@ -41,7 +41,7 @@ export function EscuelasAdmin({
     () =>
       escuelas.filter((e) =>
         coincide(
-          `${e.direccion} ${e.nombre ?? ""} ${nombreCompleto(e.supervisor)} ${nombreCompleto(e.inspector)}`,
+          `${e.id} ${e.direccion} ${e.nombre ?? ""} ${nombreCompleto(e.supervisor)} ${nombreCompleto(e.inspector)}`,
           busqueda,
         ),
       ),
@@ -78,7 +78,7 @@ export function EscuelasAdmin({
             {desactivadas > 0 && ` · ${desactivadas} desactivada${desactivadas === 1 ? "" : "s"}`}
           </h2>
           {escuelas.length > 5 && (
-            <Buscador value={busqueda} onChange={setBusqueda} placeholder="Buscar por dirección, nombre o persona" />
+            <Buscador value={busqueda} onChange={setBusqueda} placeholder="Buscar por número, dirección o persona" />
           )}
         </div>
 
@@ -109,19 +109,33 @@ function CamposEscuela({
 }: { valores: EscuelaState["valores"]; autoFocus?: boolean } & Equipo) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {/* La direccion va primero: es como la gente conoce cada escuela */}
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-semibold">Dirección</span>
-        <input
-          name="direccion"
-          defaultValue={valores.direccion}
-          placeholder="Ej: Av. Rivadavia 1234"
-          autoFocus={autoFocus}
-          autoComplete="off"
-          className="input"
-        />
-      </label>
-      <label className="flex flex-col gap-1.5">
+      {/* Numero y direccion primero: es como la gente identifica cada escuela */}
+      <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3 sm:col-span-2 sm:grid-cols-[120px_minmax(0,1fr)]">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-semibold">Número</span>
+          <input
+            name="numero"
+            defaultValue={valores.numero}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="Ej: 13"
+            autoFocus={autoFocus}
+            autoComplete="off"
+            className="input num"
+          />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-semibold">Dirección</span>
+          <input
+            name="direccion"
+            defaultValue={valores.direccion}
+            placeholder="Ej: Portela 734"
+            autoComplete="off"
+            className="input"
+          />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1.5 sm:col-span-2">
         <span className="text-sm font-semibold">
           Nombre oficial <span className="font-normal text-muted">(opcional)</span>
         </span>
@@ -170,7 +184,7 @@ function SelectPersona({
 const vacio: EscuelaState = {
   error: null,
   ok: false,
-  valores: { nombre: "", direccion: "", supervisorId: "", inspectorId: "" },
+  valores: { numero: "", nombre: "", direccion: "", supervisorId: "", inspectorId: "" },
   intento: 0,
 };
 
@@ -200,6 +214,7 @@ function EscuelaFila({ escuela: e, ...equipo }: { escuela: Escuela } & Equipo) {
     {
       ...vacio,
       valores: {
+        numero: String(e.id),
         nombre: e.nombre ?? "",
         direccion: e.direccion,
         supervisorId: e.supervisor_id,
