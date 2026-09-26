@@ -18,14 +18,6 @@ export function fechaLarga() {
   return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${valor("day")} de ${valor("month")}`;
 }
 
-// "Buen día" / "Buenas tardes" / "Buenas noches" segun la hora de Argentina
-export function saludo() {
-  const hora = Number(
-    new Date().toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hour12: false }),
-  );
-  return hora < 13 ? "Buen día" : hora < 20 ? "Buenas tardes" : "Buenas noches";
-}
-
 // "2026-09-26" -> "Hoy" / "Ayer" / "Mañana" / "Lun 21"
 export function fechaCorta(iso: string) {
   const hoy = hoyISO();

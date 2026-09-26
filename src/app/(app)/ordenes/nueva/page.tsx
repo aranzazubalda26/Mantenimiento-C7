@@ -8,7 +8,7 @@ import { NuevaOrdenForm } from "./nueva-orden-form";
 
 export const metadata: Metadata = { title: "Nueva orden · Mantenimiento C7" };
 
-export default async function NuevaOrdenPage() {
+export default async function NuevaOrdenPage(props: PageProps<"/ordenes/nueva">) {
   const usuario = await getUsuario();
   if (!puedeCrearOrdenes(usuario)) redirect("/");
 
@@ -22,6 +22,10 @@ export default async function NuevaOrdenPage() {
   if (usuario.rol === "inspector") query = query.eq("inspector_id", usuario.id);
   const { data: escuelas } = await query;
 
+  // Viniendo desde la pantalla de una escuela (?escuela=13) ya queda elegida
+  const { escuela } = await props.searchParams;
+  const escuelaInicial = escuelas?.find((e) => String(e.id) === escuela)?.id ?? null;
+
   return (
     <>
       <AppHeader titulo="Nueva orden" />
@@ -32,6 +36,7 @@ export default async function NuevaOrdenPage() {
             usuarioId={usuario.id}
             hoy={hoyISO()}
             esAdmin={usuario.rol === "admin"}
+            escuelaInicial={escuelaInicial}
           />
         </div>
       </Pagina>

@@ -22,7 +22,16 @@ function iniciales(p: { nombre: string; apellido: string } | null) {
   return p ? `${p.nombre[0] ?? ""}${p.apellido[0] ?? ""}`.toUpperCase() : "?";
 }
 
-export function ListaOrdenes({ ordenes, vacio }: { ordenes: OrdenLista[]; vacio: React.ReactNode }) {
+// `sinEscuela`: dentro de la pantalla de una escuela no hace falta repetirla en cada fila
+export function ListaOrdenes({
+  ordenes,
+  vacio,
+  sinEscuela,
+}: {
+  ordenes: OrdenLista[];
+  vacio: React.ReactNode;
+  sinEscuela?: boolean;
+}) {
   return (
     <div className="tarjeta overflow-hidden">
       <div
@@ -47,8 +56,12 @@ export function ListaOrdenes({ ordenes, vacio }: { ordenes: OrdenLista[]; vacio:
                   <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
                     <span className="num">{numeroOrden(o.id)}</span>
                     <span>·</span>
-                    <b className="font-semibold text-foreground">{o.escuelas?.direccion}</b>
-                    <span>·</span>
+                    {!sinEscuela && (
+                      <>
+                        <b className="font-semibold text-foreground">{o.escuelas?.direccion}</b>
+                        <span>·</span>
+                      </>
+                    )}
                     <span>{o.ubicacion}</span>
                     {(o.prioridad === "urgente" || o.prioridad === "alta") && (
                       <PrioridadBadge prioridad={o.prioridad} />

@@ -32,15 +32,17 @@ export function NuevaOrdenForm({
   usuarioId,
   hoy,
   esAdmin,
+  escuelaInicial,
 }: {
   escuelas: EscuelaOpcion[];
   usuarioId: string;
   hoy: string;
   esAdmin: boolean;
+  escuelaInicial: number | null;
 }) {
   const router = useRouter();
-  const [paso, setPaso] = useState<1 | 2>(1);
-  const [escuelaId, setEscuelaId] = useState<number | null>(null);
+  const [paso, setPaso] = useState<1 | 2>(escuelaInicial ? 2 : 1);
+  const [escuelaId, setEscuelaId] = useState<number | null>(escuelaInicial);
   const [fecha, setFecha] = useState(hoy);
   const [prioridad, setPrioridad] = useState<Prioridad | null>(null);
   const [ubicacion, setUbicacion] = useState("");
