@@ -20,7 +20,7 @@ type Orden = {
   estado: Estado;
   ubicacion: string;
   created_at: string;
-  escuelas: { id: number; nombre: string; direccion: string | null } | null;
+  escuelas: { id: number; direccion: string; nombre: string | null } | null;
   creador: { nombre: string; apellido: string } | null;
   orden_fotos: { id: number; path: string }[];
 };
@@ -57,7 +57,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
     <>
       <AppHeader
         titulo={`Orden ${numeroOrden(orden.id)}`}
-        subtitulo={`${orden.escuelas?.nombre ?? ""} · ${orden.ubicacion}`}
+        subtitulo={`${orden.escuelas?.direccion ?? ""} · ${orden.ubicacion}`}
       />
       <Pagina>
         <div className="flex w-full max-w-[720px] flex-col gap-4">
@@ -86,8 +86,8 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
               <p className="flex items-start gap-1.5 text-sm text-muted">
                 <IconoLugar className="mt-0.5 size-4" />
                 <span>
-                  <b className="font-semibold text-foreground">{orden.escuelas?.nombre}</b>
-                  {orden.escuelas?.direccion && ` (${orden.escuelas.direccion})`}, {orden.ubicacion}
+                  <b className="font-semibold text-foreground">{orden.escuelas?.direccion}</b>
+                  {orden.escuelas?.nombre && ` (${orden.escuelas.nombre})`}, {orden.ubicacion}
                 </span>
               </p>
               {orden.creador && (

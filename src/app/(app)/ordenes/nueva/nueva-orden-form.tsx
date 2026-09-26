@@ -155,8 +155,8 @@ export function NuevaOrdenForm({
         <div className="flex items-center gap-3 rounded-[10px] bg-background p-3">
           <span className="esc-num">{escuela.id}</span>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{escuela.nombre}</p>
-            {escuela.direccion && <p className="truncate text-[13px] text-muted">{escuela.direccion}</p>}
+            <p className="truncate font-semibold">{escuela.direccion}</p>
+            {escuela.nombre && <p className="truncate text-[13px] text-muted">{escuela.nombre}</p>}
           </div>
           <button
             type="button"

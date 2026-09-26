@@ -21,17 +21,20 @@ export type EscuelaState = {
   intento: number;
 };
 
+const limpiar = (v: FormDataEntryValue | null) => String(v ?? "").trim().replace(/\s+/g, " ");
+
 function leer(formData: FormData): Valores {
   return {
-    nombre: String(formData.get("nombre") ?? "").trim().replace(/\s+/g, " "),
-    direccion: String(formData.get("direccion") ?? "").trim(),
+    nombre: limpiar(formData.get("nombre")),
+    direccion: limpiar(formData.get("direccion")),
     supervisorId: String(formData.get("supervisor_id") ?? ""),
     inspectorId: String(formData.get("inspector_id") ?? ""),
   };
 }
 
+// La direccion es obligatoria (asi conocen la escuela); el nombre oficial es opcional
 function validar(v: Valores) {
-  if (!v.nombre) return "Escribí el nombre de la escuela.";
+  if (!v.direccion) return "Escribí la dirección de la escuela.";
   if (!v.supervisorId) return "Elegí el supervisor.";
   if (!v.inspectorId) return "Elegí el inspector.";
   return null;
@@ -39,15 +42,15 @@ function validar(v: Valores) {
 
 function aFila(v: Valores) {
   return {
-    nombre: v.nombre,
-    direccion: v.direccion || null,
+    direccion: v.direccion,
+    nombre: v.nombre || null,
     supervisor_id: v.supervisorId,
     inspector_id: v.inspectorId,
   };
 }
 
 function mensaje(error: { code?: string; message: string }) {
-  if (error.code === "23505") return "Ya existe una escuela con ese nombre.";
+  if (error.code === "23505") return "Ya existe una escuela con esa dirección.";
   if (error.code === "22023") return error.message; // validacion de asignaciones en la base
   console.error(error);
   return "No se pudo guardar. Probá de nuevo.";

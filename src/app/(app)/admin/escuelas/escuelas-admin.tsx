@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { Buscador, ErrorMsg } from "@/components/ui";
+import { coincide } from "@/lib/buscar";
 import { nombreCompleto } from "@/lib/usuarios";
 import {
   cambiarActiva,
@@ -15,8 +16,8 @@ type NombreApellido = { nombre: string; apellido: string };
 
 export type Escuela = {
   id: number;
-  nombre: string;
-  direccion: string | null;
+  direccion: string; // como la conocen: se muestra como titulo
+  nombre: string | null; // nombre oficial, opcional
   activa: boolean;
   supervisor_id: string;
   inspector_id: string;
@@ -28,10 +29,6 @@ export type Persona = NombreApellido & { id: string; rol: string };
 
 type Equipo = { supervisores: Persona[]; inspectores: Persona[] };
 
-function normalizar(s: string) {
-  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
-}
-
 export function EscuelasAdmin({
   escuelas,
   supervisores,
@@ -40,15 +37,16 @@ export function EscuelasAdmin({
   const [busqueda, setBusqueda] = useState("");
   const equipo = { supervisores, inspectores };
 
-  const filtradas = useMemo(() => {
-    const q = normalizar(busqueda);
-    if (!q) return escuelas;
-    return escuelas.filter((e) =>
-      normalizar(
-        `${e.nombre} ${e.direccion ?? ""} ${nombreCompleto(e.supervisor)} ${nombreCompleto(e.inspector)}`,
-      ).includes(q),
-    );
-  }, [escuelas, busqueda]);
+  const filtradas = useMemo(
+    () =>
+      escuelas.filter((e) =>
+        coincide(
+          `${e.direccion} ${e.nombre ?? ""} ${nombreCompleto(e.supervisor)} ${nombreCompleto(e.inspector)}`,
+          busqueda,
+        ),
+      ),
+    [escuelas, busqueda],
+  );
 
   const activas = escuelas.filter((e) => e.activa).length;
   const desactivadas = escuelas.length - activas;
@@ -80,7 +78,7 @@ export function EscuelasAdmin({
             {desactivadas > 0 && ` · ${desactivadas} desactivada${desactivadas === 1 ? "" : "s"}`}
           </h2>
           {escuelas.length > 5 && (
-            <Buscador value={busqueda} onChange={setBusqueda} placeholder="Buscar escuela, supervisor o inspector" />
+            <Buscador value={busqueda} onChange={setBusqueda} placeholder="Buscar por dirección, nombre o persona" />
           )}
         </div>
 
@@ -111,21 +109,30 @@ function CamposEscuela({
 }: { valores: EscuelaState["valores"]; autoFocus?: boolean } & Equipo) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <input
-        name="nombre"
-        defaultValue={valores.nombre}
-        placeholder="Nombre (ej: Escuela N° 5 D.E. 3)"
-        aria-label="Nombre de la escuela"
-        autoFocus={autoFocus}
-        className="input"
-      />
-      <input
-        name="direccion"
-        defaultValue={valores.direccion}
-        placeholder="Dirección (opcional)"
-        aria-label="Dirección"
-        className="input"
-      />
+      {/* La direccion va primero: es como la gente conoce cada escuela */}
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-semibold">Dirección</span>
+        <input
+          name="direccion"
+          defaultValue={valores.direccion}
+          placeholder="Ej: Av. Rivadavia 1234"
+          autoFocus={autoFocus}
+          autoComplete="off"
+          className="input"
+        />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-semibold">
+          Nombre oficial <span className="font-normal text-muted">(opcional)</span>
+        </span>
+        <input
+          name="nombre"
+          defaultValue={valores.nombre}
+          placeholder="Ej: Escuela N° 5 D.E. 3"
+          autoComplete="off"
+          className="input"
+        />
+      </label>
       <SelectPersona name="supervisor_id" label="Supervisor" personas={supervisores} value={valores.supervisorId} />
       <SelectPersona name="inspector_id" label="Inspector" personas={inspectores} value={valores.inspectorId} />
     </div>
@@ -193,8 +200,8 @@ function EscuelaFila({ escuela: e, ...equipo }: { escuela: Escuela } & Equipo) {
     {
       ...vacio,
       valores: {
-        nombre: e.nombre,
-        direccion: e.direccion ?? "",
+        nombre: e.nombre ?? "",
+        direccion: e.direccion,
         supervisorId: e.supervisor_id,
         inspectorId: e.inspector_id,
       },
@@ -226,14 +233,14 @@ function EscuelaFila({ escuela: e, ...equipo }: { escuela: Escuela } & Equipo) {
         <span className="esc-num mt-0.5">{e.id}</span>
         <div className="min-w-0">
           <p className="font-semibold">
-            {e.nombre}
+            {e.direccion}
             {!e.activa && (
               <span className="ml-2 inline-flex h-[22px] items-center rounded-full bg-[#eef0f3] px-2 align-middle text-xs font-semibold text-[#475467]">
                 Desactivada
               </span>
             )}
           </p>
-          {e.direccion && <p className="truncate text-[13px] text-muted">{e.direccion}</p>}
+          {e.nombre && <p className="truncate text-[13px] text-muted">{e.nombre}</p>}
           <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[13.5px]">
             <span>
               <span className="text-muted">Supervisor:</span> {nombreCompleto(e.supervisor)}

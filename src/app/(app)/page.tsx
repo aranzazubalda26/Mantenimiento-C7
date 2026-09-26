@@ -22,11 +22,11 @@ type Urgente = {
   prioridad: Prioridad;
   ubicacion: string;
   escuela_id: number;
-  escuelas: { nombre: string } | null;
+  escuelas: { direccion: string } | null;
 };
 
 const SELECT_LISTA =
-  "id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(nombre), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)";
+  "id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)";
 
 // Colores de la barrita por estado (mismos que las pastillas)
 const COLOR_ESTADO: Record<Estado, string> = {
@@ -41,7 +41,7 @@ export default async function Home() {
   const esAdmin = usuario.rol === "admin";
 
   // Escuelas del tablero: el admin ve todas; el resto, las asignadas
-  let qEscuelas = supabase.from("escuelas").select("id, nombre").eq("activa", true).order("nombre");
+  let qEscuelas = supabase.from("escuelas").select("id, direccion, nombre").eq("activa", true).order("direccion");
   if (!esAdmin) {
     qEscuelas = qEscuelas.or(`inspector_id.eq.${usuario.id},supervisor_id.eq.${usuario.id}`);
   }
@@ -57,7 +57,7 @@ export default async function Home() {
       .returns<OrdenLista[]>(),
     supabase
       .from("ordenes_trabajo")
-      .select("id, descripcion, prioridad, ubicacion, escuela_id, escuelas(nombre)")
+      .select("id, descripcion, prioridad, ubicacion, escuela_id, escuelas(direccion)")
       .eq("estado", "pendiente")
       .in("prioridad", ["urgente", "alta"])
       .order("prioridad", { ascending: false }) // "urgente" > "alta" alfabeticamente
@@ -139,7 +139,7 @@ export default async function Home() {
                             <span className="min-w-0 flex-1">
                               <span className="block font-semibold pc:truncate">{o.descripcion}</span>
                               <span className="block text-[13px] text-muted">
-                                <span className="num">{numeroOrden(o.id)}</span> · {o.escuelas?.nombre}, {o.ubicacion}
+                                <span className="num">{numeroOrden(o.id)}</span> · {o.escuelas?.direccion}, {o.ubicacion}
                               </span>
                             </span>
                             <PrioridadBadge prioridad={o.prioridad} />
@@ -192,7 +192,8 @@ export default async function Home() {
                         return (
                           <div key={e.id} className="flex flex-col gap-1.5 rounded-xl border border-border p-3.5">
                             <span className="esc-num">{e.id}</span>
-                            <span className="font-semibold leading-snug">{e.nombre}</span>
+                            <span className="font-semibold leading-snug">{e.direccion}</span>
+                            {e.nombre && <span className="-mt-1 truncate text-[12.5px] text-muted">{e.nombre}</span>}
                             <span className="text-[13px] text-muted">
                               {abiertas ? `${abiertas} ${abiertas === 1 ? "orden abierta" : "órdenes abiertas"}` : "Sin órdenes abiertas"}
                             </span>

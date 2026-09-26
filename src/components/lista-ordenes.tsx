@@ -11,7 +11,7 @@ export type OrdenLista = {
   prioridad: Prioridad;
   estado: Estado;
   ubicacion: string;
-  escuelas: { nombre: string } | null;
+  escuelas: { direccion: string } | null;
   creador: { nombre: string; apellido: string } | null;
 };
 
@@ -47,7 +47,7 @@ export function ListaOrdenes({ ordenes, vacio }: { ordenes: OrdenLista[]; vacio:
                   <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
                     <span className="num">{numeroOrden(o.id)}</span>
                     <span>·</span>
-                    <b className="font-semibold text-foreground">{o.escuelas?.nombre}</b>
+                    <b className="font-semibold text-foreground">{o.escuelas?.direccion}</b>
                     <span>·</span>
                     <span>{o.ubicacion}</span>
                     {(o.prioridad === "urgente" || o.prioridad === "alta") && (

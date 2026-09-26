@@ -1,17 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { coincide } from "@/lib/buscar";
+import { IconoFlecha } from "./iconos";
 
-export type EscuelaOpcion = { id: number; nombre: string; direccion: string | null };
-
-// Sin acentos ni mayusculas para buscar "Nro 5" o "rivadavia" como sea que se escriba
-function normalizar(s: string) {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim();
-}
+// La direccion es como conocen cada escuela: va como texto principal
+export type EscuelaOpcion = { id: number; direccion: string; nombre: string | null };
 
 // Desplegable con buscador: la lista de escuelas puede ser larga
 export function EscuelaSelect({
@@ -31,13 +25,10 @@ export function EscuelaSelect({
 
   const seleccionada = escuelas.find((e) => e.id === value) ?? null;
 
-  const filtradas = useMemo(() => {
-    const q = normalizar(busqueda);
-    if (!q) return escuelas;
-    return escuelas.filter((e) =>
-      normalizar(`${e.nombre} ${e.direccion ?? ""}`).includes(q),
-    );
-  }, [escuelas, busqueda]);
+  const filtradas = useMemo(
+    () => escuelas.filter((e) => coincide(`${e.direccion} ${e.nombre ?? ""}`, busqueda)),
+    [escuelas, busqueda],
+  );
 
   // Cerrar al tocar afuera o con Escape
   useEffect(() => {
@@ -71,19 +62,12 @@ export function EscuelaSelect({
         className="input flex items-center justify-between gap-2 text-left"
       >
         <span className={`truncate ${seleccionada ? "" : "text-muted/70"}`}>
-          {seleccionada?.nombre ?? "Elegí una escuela"}
+          {seleccionada?.direccion ?? "Elegí la escuela por su dirección"}
         </span>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          className={`size-5 shrink-0 text-muted transition-transform ${abierto ? "rotate-180" : ""}`}
-          aria-hidden
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        {/* Flecha hacia abajo (cerrado) o arriba (abierto) */}
+        <IconoFlecha
+          className={`size-5 text-muted transition-transform ${abierto ? "-rotate-90" : "rotate-90"}`}
+        />
       </button>
 
       {abierto && (
@@ -94,7 +78,7 @@ export function EscuelaSelect({
               autoFocus
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar escuela…"
+              placeholder="Buscar por dirección o nombre…"
               aria-label="Buscar escuela"
               className="h-11 w-full rounded-lg bg-background px-3 text-base outline-none focus:bg-surface focus:ring-2 focus:ring-primary/20"
             />
@@ -116,9 +100,9 @@ export function EscuelaSelect({
                   >
                     <span className="esc-num">{e.id}</span>
                     <span className="flex min-w-0 flex-col">
-                      <span className="font-medium">{e.nombre}</span>
-                      {e.direccion && (
-                        <span className="text-sm text-muted">{e.direccion}</span>
+                      <span className="font-medium">{e.direccion}</span>
+                      {e.nombre && (
+                        <span className="text-sm text-muted">{e.nombre}</span>
                       )}
                     </span>
                   </button>
