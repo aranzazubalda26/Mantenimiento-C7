@@ -10,6 +10,7 @@ import {
   crearUsuario,
   editarUsuario,
   type CrearUsuarioState,
+  type EditarUsuarioState,
   type SimpleState,
 } from "./actions";
 
@@ -119,7 +120,7 @@ function NuevoUsuario() {
   }
 
   return (
-    <form action={action} className="flex flex-col gap-4 rounded-2xl bg-surface p-4 ring-1 ring-border">
+    <form action={action} noValidate className="flex flex-col gap-4 rounded-2xl bg-surface p-4 ring-1 ring-border">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Nuevo usuario</h2>
         <button type="button" onClick={() => setAbierto(false)} className="text-sm font-medium text-muted">
@@ -230,15 +231,6 @@ function Fila({ usuario: u, esYo }: { usuario: UsuarioFila; esYo: boolean }) {
   const [errorActivo, setErrorActivo] = useState<string | null>(null);
   const [cambiando, startTransition] = useTransition();
 
-  const [editState, editAction, editando] = useActionState(
-    async (prev: SimpleState, fd: FormData) => {
-      const r = await editarUsuario(u.id, prev, fd);
-      if (r.ok) setModo("ver");
-      return r;
-    },
-    simpleInicial,
-  );
-
   const [password, setPassword] = useState("");
   const [passState, passAction, guardandoPass] = useActionState(
     async (prev: SimpleState, fd: FormData) => cambiarPassword(u.id, prev, fd),
@@ -252,27 +244,7 @@ function Fila({ usuario: u, esYo }: { usuario: UsuarioFila; esYo: boolean }) {
     });
 
   if (modo === "editar") {
-    return (
-      <li className="p-4">
-        <form action={editAction} className="flex flex-col gap-3">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <input name="nombre" defaultValue={u.nombre} aria-label="Nombre" autoFocus className="input" />
-            <input name="apellido" defaultValue={u.apellido} aria-label="Apellido" className="input" />
-            <select name="rol" defaultValue={u.rol} aria-label="Rol" disabled={esYo} className="input disabled:opacity-60">
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROL_LABEL[r]}
-                </option>
-              ))}
-            </select>
-            {/* select deshabilitado no se envia: mandar el rol actual */}
-            {esYo && <input type="hidden" name="rol" value={u.rol} />}
-          </div>
-          {editState.error && <ErrorMsg mensaje={editState.error} />}
-          <Botones onCancelar={() => setModo("ver")} pending={editando} />
-        </form>
-      </li>
-    );
+    return <EditarUsuario usuario={u} esYo={esYo} onCerrar={() => setModo("ver")} />;
   }
 
   if (modo === "password") {
@@ -335,6 +307,68 @@ function Fila({ usuario: u, esYo }: { usuario: UsuarioFila; esYo: boolean }) {
           </Accion>
         )}
       </div>
+    </li>
+  );
+}
+
+// Componente aparte: cada vez que se abre arranca con los datos actuales del usuario
+function EditarUsuario({
+  usuario: u,
+  esYo,
+  onCerrar,
+}: {
+  usuario: UsuarioFila;
+  esYo: boolean;
+  onCerrar: () => void;
+}) {
+  const [state, action, pending] = useActionState(
+    async (prev: EditarUsuarioState, fd: FormData) => {
+      const r = await editarUsuario(u.id, prev, fd);
+      if (r.ok) onCerrar();
+      return r;
+    },
+    {
+      error: null,
+      ok: false,
+      valores: { nombre: u.nombre, apellido: u.apellido, email: u.email, rol: u.rol },
+      intento: 0,
+    },
+  );
+  const v = state.valores;
+
+  return (
+    <li className="p-4">
+      <form action={action} noValidate className="flex flex-col gap-3">
+        <div key={state.intento} className="grid gap-3 sm:grid-cols-2">
+          <input name="nombre" defaultValue={v.nombre} placeholder="Nombre" aria-label="Nombre" autoFocus className="input" />
+          <input name="apellido" defaultValue={v.apellido} placeholder="Apellido" aria-label="Apellido" className="input" />
+          <input
+            name="email"
+            type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoComplete="off"
+            defaultValue={v.email}
+            placeholder="Email"
+            aria-label="Email"
+            className="input"
+          />
+          <select name="rol" defaultValue={v.rol} aria-label="Rol" disabled={esYo} className="input disabled:opacity-60">
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROL_LABEL[r]}
+              </option>
+            ))}
+          </select>
+          {/* select deshabilitado no se envia: mandar el rol actual */}
+          {esYo && <input type="hidden" name="rol" value={u.rol} />}
+        </div>
+        <p className="text-xs text-muted">
+          Si cambiás el email, el usuario pasa a ingresar con el nuevo. La contraseña no cambia.
+        </p>
+        {state.error && <ErrorMsg mensaje={state.error} />}
+        <Botones onCancelar={onCerrar} pending={pending} />
+      </form>
     </li>
   );
 }

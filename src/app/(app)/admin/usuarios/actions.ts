@@ -102,31 +102,83 @@ export async function crearUsuario(
   };
 }
 
+export type EditarUsuarioState = {
+  error: string | null;
+  ok: boolean;
+  valores: UsuarioForm;
+  intento: number; // igual que en el alta: re-monta los campos con `valores`
+};
+
 export async function editarUsuario(
   id: string,
-  _prev: SimpleState,
+  prev: EditarUsuarioState,
   formData: FormData,
-): Promise<SimpleState> {
+): Promise<EditarUsuarioState> {
   const admin = await requireAdmin();
-  const nombre = limpiar(formData.get("nombre"));
-  const apellido = limpiar(formData.get("apellido"));
   const rol = formData.get("rol");
+  const valores: UsuarioForm = {
+    nombre: limpiar(formData.get("nombre")),
+    apellido: limpiar(formData.get("apellido")),
+    email: limpiar(formData.get("email")).toLowerCase(),
+    rol: esRol(rol) ? rol : "",
+  };
+  const intento = prev.intento + 1;
+  const falla = (error: string) => ({ error, ok: false, valores, intento });
 
-  if (!nombre || !apellido) return { error: "Completá nombre y apellido.", ok: false };
-  if (!esRol(rol)) return { error: "Elegí un rol.", ok: false };
-  if (id === admin.id && rol !== "admin") {
-    return { error: "No podés quitarte el rol de admin a vos mismo.", ok: false };
+  if (!valores.nombre || !valores.apellido) return falla("Completá nombre y apellido.");
+  if (!EMAIL_RE.test(valores.email)) return falla("El email no es válido.");
+  if (!valores.rol) return falla("Elegí un rol.");
+  if (id === admin.id && valores.rol !== "admin") {
+    return falla("No podés quitarte el rol de admin a vos mismo.");
   }
 
-  const { error } = await createAdminClient()
+  const supabase = createAdminClient();
+  const { data: actual } = await supabase.from("perfiles").select("email").eq("id", id).single();
+  if (!actual) return falla("El usuario no existe.");
+  const cambiaEmail = actual.email !== valores.email;
+
+  if (cambiaEmail) {
+    // Supabase Auth responde un 500 generico si el email ya existe: chequear antes
+    const { data: otro } = await supabase
+      .from("perfiles")
+      .select("id")
+      .eq("email", valores.email)
+      .neq("id", id)
+      .maybeSingle();
+    if (otro) return falla("Ya existe un usuario con ese email.");
+
+    // El email de acceso vive en Supabase Auth: se cambia primero ahi.
+    // email_confirm: el admin lo cambia directo, sin mail de confirmacion.
+    const { error } = await supabase.auth.admin.updateUserById(id, {
+      email: valores.email,
+      email_confirm: true,
+    });
+    if (error) {
+      console.error("cambiar email:", error);
+      return falla("No se pudo cambiar el email. Probá de nuevo.");
+    }
+  }
+
+  const { error } = await supabase
     .from("perfiles")
-    .update({ nombre, apellido, rol })
+    .update({
+      nombre: valores.nombre,
+      apellido: valores.apellido,
+      email: valores.email,
+      rol: valores.rol,
+    })
     .eq("id", id);
-  if (error) return { error: mensajeDb(error), ok: false };
+  if (error) {
+    // Que Auth y perfiles no queden con emails distintos
+    if (cambiaEmail) {
+      await supabase.auth.admin.updateUserById(id, { email: actual.email, email_confirm: true });
+    }
+    return falla(mensajeDb(error));
+  }
 
   revalidar();
   revalidatePath("/");
-  return { error: null, ok: true };
+  return { error: null, ok: true, valores, intento };
 }
 
 export async function cambiarPassword(
