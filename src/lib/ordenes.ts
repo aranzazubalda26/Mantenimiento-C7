@@ -19,9 +19,30 @@ export const ESTADO_LABEL: Record<Estado, string> = {
   finalizada: "Finalizada",
 };
 
+// Sugerencias para "Dónde, dentro de la escuela" (se puede escribir cualquier otra cosa)
+export const LUGARES_COMUNES = [
+  "Aula",
+  "Baños planta baja",
+  "Baños 1er piso",
+  "Cocina / comedor",
+  "Patio",
+  "Hall de entrada",
+  "Dirección",
+  "Preceptoría",
+  "Gimnasio",
+  "Pasillo",
+  "SUM",
+  "Terraza",
+];
+
 export const MAX_FOTOS = 10;
 export const MAX_DESCRIPCION = 2000;
 export const MAX_UBICACION = 200;
+
+// 142 -> "#0142"
+export function numeroOrden(n: number) {
+  return "#" + String(n).padStart(4, "0");
+}
 
 export function esPrioridad(v: unknown): v is Prioridad {
   return PRIORIDADES.includes(v as Prioridad);

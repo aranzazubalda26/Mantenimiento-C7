@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader, Pagina } from "@/components/app-header";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { EscuelasAdmin, type Escuela, type Persona } from "./escuelas-admin";
@@ -30,14 +30,14 @@ export default async function EscuelasPage() {
 
   return (
     <>
-      <AppHeader titulo="Escuelas" />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-5">
+      <AppHeader titulo="Escuelas" subtitulo="Cada escuela tiene un supervisor y un inspector" />
+      <Pagina className="max-w-[1000px]">
         <EscuelasAdmin
           escuelas={escuelas ?? []}
           supervisores={(personas ?? []).filter((p) => p.rol === "supervisor")}
           inspectores={(personas ?? []).filter((p) => p.rol === "inspector")}
         />
-      </main>
+      </Pagina>
     </>
   );
 }

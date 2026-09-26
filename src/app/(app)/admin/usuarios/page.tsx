@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader, Pagina } from "@/components/app-header";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Rol } from "@/lib/usuarios";
@@ -36,10 +36,10 @@ export default async function UsuariosPage() {
 
   return (
     <>
-      <AppHeader titulo="Usuarios" />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-5">
+      <AppHeader titulo="Usuarios" subtitulo="Quiénes pueden entrar a la app y con qué rol" />
+      <Pagina className="max-w-[1000px]">
         <UsuariosAdmin usuarios={usuarios} miId={admin.id} />
-      </main>
+      </Pagina>
     </>
   );
 }

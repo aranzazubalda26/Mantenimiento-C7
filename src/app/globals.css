@@ -1,31 +1,24 @@
 @import "tailwindcss";
 
+/* ====== Colores, letras y medidas (cambiá acá y cambia todo) ======
+   Tomados del diseño de referencia (app-cuadrillas.html). */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --muted: #64748b;
-  --surface: #ffffff;
-  --border: #cbd5e1;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --background: #f5f6f8; /* fondo */
+  --surface: #ffffff; /* superficie */
+  --border: #e4e7ec; /* borde */
+  --border-strong: #cdd2da; /* borde-fuerte */
+  --foreground: #101828; /* texto */
+  --muted: #5d6679; /* texto-suave */
+  --primary: #0f766e; /* acento */
+  --primary-hover: #115e59;
+  --primary-soft: #e6f4f2;
   --primary-fg: #ffffff;
-  --danger: #b91c1c;
-  --danger-soft: #fef2f2;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b1120;
-    --foreground: #e2e8f0;
-    --muted: #94a3b8;
-    --surface: #111a2e;
-    --border: #334155;
-    --primary: #3b82f6;
-    --primary-hover: #60a5fa;
-    --primary-fg: #ffffff;
-    --danger: #fca5a5;
-    --danger-soft: #3b1219;
-  }
+  --danger: #b42318; /* rojo */
+  --danger-soft: #fee4e2;
+  --segmento: #eaecf0; /* fondo de filtros y controles segmentados */
+  --fila-hover: #fafbfc;
+  --sombra: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --sombra-alta: 0 12px 32px -8px rgba(16, 24, 40, 0.18);
 }
 
 @theme inline {
@@ -34,47 +27,117 @@
   --color-muted: var(--muted);
   --color-surface: var(--surface);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
   --color-primary-fg: var(--primary-fg);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-segmento: var(--segmento);
+  --color-fila-hover: var(--fila-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --shadow-suave: var(--sombra);
+  --shadow-alta: var(--sombra-alta);
+  /* Desde 900px: barra lateral fija. Por debajo: menu deslizable (celular) */
+  --breakpoint-pc: 56.25rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
   -webkit-tap-highlight-color: transparent;
-  padding-bottom: env(safe-area-inset-bottom);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }
 
 @layer components {
+  /* Numeros de orden, horas: tipografia monoespaciada */
+  .num {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tarjeta {
+    @apply rounded-xl border border-border bg-surface shadow-suave;
+  }
+
   /* 16px minimo: evita que iOS haga zoom al tocar el campo */
   .input {
-    @apply h-12 w-full rounded-xl border border-border bg-surface px-4 text-base
+    @apply min-h-[46px] w-full rounded-[10px] border border-border-strong bg-surface px-3.5 text-base
       outline-none transition-colors placeholder:text-muted/70
-      focus:border-primary focus:ring-3 focus:ring-primary/20;
+      focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,118,110,0.15)];
+  }
+
+  /* Base comun de botones (Tailwind 4 no deja hacer @apply de una clase propia) */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-oscuro {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-[10px]
+      border border-border bg-surface px-4 text-[15px] font-semibold text-foreground shadow-suave
+      transition-colors hover:border-border-strong disabled:opacity-60;
   }
 
   .btn-primary {
-    @apply flex h-12 w-full items-center justify-center rounded-xl bg-primary
-      px-5 text-base font-semibold text-primary-fg transition-colors
-      hover:bg-primary-hover active:scale-[0.99] disabled:opacity-60;
+    @apply border-primary bg-primary text-primary-fg hover:border-primary-hover hover:bg-primary-hover;
+  }
+
+  .btn-oscuro {
+    @apply border-foreground bg-foreground text-white;
+  }
+
+  .btn-chico {
+    @apply min-h-9 rounded-[9px] px-3 text-sm;
   }
 
   /* Botones que solo existen en desarrollo: borde punteado para distinguirlos */
   .btn-dev {
-    @apply flex h-12 w-full items-center justify-center rounded-xl border-2
-      border-dashed border-amber-500/70 text-base font-semibold text-amber-600
-      transition-colors hover:bg-amber-500/10 disabled:opacity-60
-      dark:text-amber-400;
+    @apply flex min-h-12 w-full items-center justify-center rounded-[10px] border-2
+      border-dashed border-amber-500/70 text-base font-semibold text-amber-700
+      transition-colors hover:bg-amber-500/10 disabled:opacity-60;
   }
 
-  .btn-secondary {
-    @apply flex h-10 items-center justify-center rounded-xl border border-border
-      bg-surface px-4 text-sm font-medium transition-colors hover:bg-background;
+  /* Control segmentado (filtros, prioridad) */
+  .segmento {
+    @apply flex max-w-full gap-1 overflow-x-auto rounded-[11px] bg-segmento p-1 [scrollbar-width:none];
+  }
+  .segmento > button,
+  .segmento > label {
+    @apply flex min-h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap
+      rounded-lg px-3 text-sm font-medium text-muted;
+  }
+  .segmento > [aria-pressed="true"],
+  .segmento > label:has(input:checked) {
+    @apply bg-surface font-semibold text-foreground shadow-[0_1px_3px_rgba(16,24,40,0.1)];
+  }
+
+  /* Titulo chico de dato / seccion */
+  .dato-titulo {
+    @apply mb-2 text-[12.5px] font-semibold text-muted;
+  }
+
+  /* Numero de escuela en cuadradito */
+  .esc-num {
+    @apply grid size-[26px] shrink-0 place-items-center rounded-[7px] bg-background text-xs font-semibold
+      text-muted tabular-nums;
+  }
+
+  .avatar {
+    @apply grid size-[38px] shrink-0 place-items-center rounded-full bg-[#dde7f0] text-sm font-semibold text-[#1d3b5a];
   }
 }

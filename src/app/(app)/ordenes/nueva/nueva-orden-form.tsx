@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { EscuelaSelect, type EscuelaOpcion } from "@/components/escuela-select";
 import { FotosInput, idUnico, type FotoLocal } from "@/components/fotos-input";
-import { Campo } from "@/components/ui";
+import { Bloque, Campo, ErrorMsg, PieForm } from "@/components/ui";
 import { comprimirImagen } from "@/lib/comprimir-imagen";
 import {
+  LUGARES_COMUNES,
   MAX_DESCRIPCION,
   MAX_FOTOS,
   MAX_UBICACION,
@@ -19,13 +20,6 @@ import { createClient } from "@/lib/supabase/client";
 import { crearOrden } from "./actions";
 
 const BUCKET = "ordenes-fotos";
-
-const PRIORIDAD_ACTIVA: Record<Prioridad, string> = {
-  baja: "bg-slate-600 text-white ring-slate-600",
-  media: "bg-sky-600 text-white ring-sky-600",
-  alta: "bg-amber-500 text-white ring-amber-500",
-  urgente: "bg-red-600 text-white ring-red-600",
-};
 
 const EXTENSION: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -60,50 +54,52 @@ export function NuevaOrdenForm({
 
   if (escuelas.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border p-6 text-center">
-        <p className="font-medium">
-          {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
-        </p>
-        <p className="mt-1 text-sm text-muted">
-          {esAdmin
-            ? "Cargá al menos una para poder crear órdenes."
-            : "Pedile al administrador que te asigne tus escuelas."}
-        </p>
+      <Bloque className="items-center py-10 text-center">
+        <div>
+          <p className="font-semibold">
+            {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {esAdmin
+              ? "Cargá al menos una para poder crear órdenes."
+              : "Pedile al administrador que te asigne tus escuelas."}
+          </p>
+        </div>
         {esAdmin && (
-          <Link href="/admin/escuelas" className="btn-primary mt-5">
+          <Link href="/admin/escuelas" className="btn-primary">
             Cargar escuelas
           </Link>
         )}
-      </div>
+      </Bloque>
     );
   }
 
   if (paso === 1 || !escuela) {
     return (
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         <Pasos actual={1} />
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">¿En qué escuela?</h2>
-          <p className="mt-1 text-muted">Elegí la escuela donde está la tarea.</p>
-        </div>
-        <EscuelaSelect escuelas={escuelas} value={escuelaId} onChange={setEscuelaId} />
-        <button
-          type="button"
-          disabled={!escuelaId}
-          onClick={() => setPaso(2)}
-          className="btn-primary"
-        >
-          Continuar
-        </button>
+        <Bloque>
+          <Campo label="¿En qué escuela es?" htmlFor="escuela">
+            <EscuelaSelect id="escuela" escuelas={escuelas} value={escuelaId} onChange={setEscuelaId} />
+          </Campo>
+        </Bloque>
+        <PieForm>
+          <Link href="/" className="btn-secondary">
+            Cancelar
+          </Link>
+          <button type="button" disabled={!escuelaId} onClick={() => setPaso(2)} className="btn-primary">
+            Continuar
+          </button>
+        </PieForm>
       </div>
     );
   }
 
   const faltante = () => {
+    if (!descripcion.trim()) return "Escribí qué hay que hacer.";
+    if (!ubicacion.trim()) return "Indicá dónde es, dentro de la escuela.";
     if (!prioridad) return "Elegí la prioridad.";
-    if (!ubicacion.trim()) return "Indicá la ubicación dentro del edificio.";
-    if (!descripcion.trim()) return "Describí la tarea.";
-    if (fotos.length === 0) return "Agregá al menos una foto.";
+    if (fotos.length === 0) return "Sumá al menos una foto.";
     return null;
   };
 
@@ -152,130 +148,146 @@ export function NuevaOrdenForm({
 
   return (
     // Cualquier cambio en el formulario borra el error anterior
-    <form
-      onSubmit={enviar}
-      onChange={() => setError(null)}
-      className="flex flex-col gap-6"
-      noValidate
-    >
+    <form onSubmit={enviar} onChange={() => setError(null)} className="flex flex-col gap-4" noValidate>
       <Pasos actual={2} />
 
-      <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Escuela</p>
-          <p className="truncate font-semibold">{escuela.nombre}</p>
-          {escuela.direccion && (
-            <p className="truncate text-sm text-muted">{escuela.direccion}</p>
-          )}
+      <Bloque>
+        <div className="flex items-center gap-3 rounded-[10px] bg-background p-3">
+          <span className="esc-num">{escuela.id}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{escuela.nombre}</p>
+            {escuela.direccion && <p className="truncate text-[13px] text-muted">{escuela.direccion}</p>}
+          </div>
+          <button
+            type="button"
+            disabled={enviando}
+            onClick={() => setPaso(1)}
+            className="shrink-0 text-[13px] font-semibold text-primary"
+          >
+            Cambiar
+          </button>
         </div>
-        <button
-          type="button"
-          disabled={enviando}
-          onClick={() => setPaso(1)}
-          className="shrink-0 text-sm font-semibold text-primary"
-        >
-          Cambiar
-        </button>
-      </div>
 
-      <Campo label="Fecha" htmlFor="fecha">
-        <input
-          id="fecha"
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          disabled={enviando}
-          required
-          className="input"
-        />
-      </Campo>
+        <Campo label="Qué hay que hacer" htmlFor="descripcion">
+          <textarea
+            id="descripcion"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            maxLength={MAX_DESCRIPCION}
+            disabled={enviando}
+            rows={3}
+            placeholder="Ej.: Pérdida de agua en la canilla del lavatorio"
+            className="input min-h-[100px] resize-y py-3 leading-normal"
+          />
+        </Campo>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-medium">Prioridad</legend>
-        <div className="grid grid-cols-4 gap-2">
-          {PRIORIDADES.map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-pressed={prioridad === p}
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <Campo label="Dónde, dentro de la escuela" htmlFor="ubicacion">
+            <input
+              id="ubicacion"
+              type="text"
+              list="lugares"
+              autoComplete="off"
+              value={ubicacion}
+              onChange={(e) => setUbicacion(e.target.value)}
+              maxLength={MAX_UBICACION}
               disabled={enviando}
-              onClick={() => {
-                setPrioridad(p);
-                setError(null);
-              }}
-              className={`h-12 rounded-xl text-sm font-semibold ring-1 transition-colors ${
-                prioridad === p ? PRIORIDAD_ACTIVA[p] : "bg-surface ring-border"
-              }`}
-            >
-              {PRIORIDAD_LABEL[p]}
-            </button>
-          ))}
+              placeholder="Ej.: Baños planta baja"
+              className="input"
+            />
+            <datalist id="lugares">
+              {LUGARES_COMUNES.map((l) => (
+                <option key={l} value={l} />
+              ))}
+            </datalist>
+          </Campo>
+          <Campo label="Fecha" htmlFor="fecha">
+            <input
+              id="fecha"
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              disabled={enviando}
+              required
+              className="input"
+            />
+          </Campo>
         </div>
-      </fieldset>
+      </Bloque>
 
-      <Campo label="Ubicación dentro del edificio" htmlFor="ubicacion">
-        <input
-          id="ubicacion"
-          type="text"
-          value={ubicacion}
-          onChange={(e) => setUbicacion(e.target.value)}
-          maxLength={MAX_UBICACION}
-          disabled={enviando}
-          placeholder="Ej: Baño de nenas, 1° piso"
-          className="input"
-        />
-      </Campo>
+      <Bloque>
+        <fieldset className="flex min-w-0 flex-col gap-2">
+          <legend className="mb-2 text-sm font-semibold">Prioridad</legend>
+          <div className="segmento w-max">
+            {PRIORIDADES.map((p) => (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={prioridad === p}
+                disabled={enviando}
+                onClick={() => {
+                  setPrioridad(p);
+                  setError(null);
+                }}
+                className={`px-4 ${p === "urgente" && prioridad === p ? "!text-danger" : ""}`}
+              >
+                {PRIORIDAD_LABEL[p]}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
-      <Campo label="Descripción de la tarea" htmlFor="descripcion">
-        <textarea
-          id="descripcion"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
-          maxLength={MAX_DESCRIPCION}
-          disabled={enviando}
-          rows={4}
-          placeholder="¿Qué hay que hacer?"
-          className="input h-auto min-h-28 resize-y py-3"
-        />
-      </Campo>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm font-medium">Fotos</span>
-          <span className="text-xs text-muted">
-            {fotos.length}/{MAX_FOTOS} · mínimo 1
-          </span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm font-semibold">Fotos</span>
+            <span className="text-xs text-muted">
+              {fotos.length}/{MAX_FOTOS} · mínimo 1
+            </span>
+          </div>
+          <FotosInput
+            fotos={fotos}
+            onChange={(f) => {
+              setFotos(f);
+              setError(null);
+            }}
+            max={MAX_FOTOS}
+            disabled={enviando}
+          />
         </div>
-        <FotosInput
-          fotos={fotos}
-          onChange={(f) => {
-            setFotos(f);
-            setError(null);
-          }}
-          max={MAX_FOTOS}
-          disabled={enviando}
-        />
-      </div>
+      </Bloque>
 
-      {error && (
-        <p role="alert" className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
-      )}
+      {error && <ErrorMsg mensaje={error} />}
 
-      <button type="submit" disabled={enviando} className="btn-primary">
-        {progreso ?? "Crear orden"}
-      </button>
+      <PieForm>
+        <Link href="/" className="btn-secondary" aria-disabled={enviando}>
+          Cancelar
+        </Link>
+        <button type="submit" disabled={enviando} className="btn-primary">
+          {progreso ?? "Crear orden"}
+        </button>
+      </PieForm>
     </form>
   );
 }
 
 function Pasos({ actual }: { actual: 1 | 2 }) {
+  const paso = (n: 1 | 2, texto: string) => (
+    <span className={`flex items-center gap-2 ${actual === n ? "font-semibold text-foreground" : ""}`}>
+      <span
+        className={`grid size-[26px] place-items-center rounded-full text-[13px] font-bold ${
+          actual === n ? "bg-primary-soft text-primary" : "bg-segmento text-muted"
+        }`}
+      >
+        {n}
+      </span>
+      {texto}
+    </span>
+  );
   return (
-    <div className="flex items-center gap-2 text-xs font-medium text-muted">
-      <span className={actual === 1 ? "text-primary" : ""}>1. Escuela</span>
-      <span className="h-px w-6 bg-border" />
-      <span className={actual === 2 ? "text-primary" : ""}>2. Detalle</span>
+    <div className="flex items-center gap-3 text-sm text-muted">
+      {paso(1, "Escuela")}
+      <span className="h-px w-6 bg-border-strong" />
+      {paso(2, "Detalle")}
     </div>
   );
 }

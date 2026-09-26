@@ -18,7 +18,9 @@ export function EscuelaSelect({
   escuelas,
   value,
   onChange,
+  id,
 }: {
+  id?: string;
   escuelas: EscuelaOpcion[];
   value: number | null;
   onChange: (id: number) => void;
@@ -61,6 +63,7 @@ export function EscuelaSelect({
   return (
     <div ref={contenedor} className="relative">
       <button
+        id={id}
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-haspopup="listbox"
@@ -84,7 +87,7 @@ export function EscuelaSelect({
       </button>
 
       {abierto && (
-        <div className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+        <div className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-border bg-surface shadow-alta">
           <div className="border-b border-border p-2">
             <input
               type="search"
@@ -93,7 +96,7 @@ export function EscuelaSelect({
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar escuela…"
               aria-label="Buscar escuela"
-              className="h-11 w-full rounded-lg bg-background px-3 text-base outline-none"
+              className="h-11 w-full rounded-lg bg-background px-3 text-base outline-none focus:bg-surface focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <ul role="listbox" className="max-h-72 overflow-y-auto overscroll-contain py-1">
@@ -107,14 +110,17 @@ export function EscuelaSelect({
                   <button
                     type="button"
                     onClick={() => elegir(e.id)}
-                    className={`flex w-full flex-col px-4 py-3 text-left hover:bg-background ${
-                      e.id === value ? "bg-primary/10" : ""
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-fila-hover ${
+                      e.id === value ? "bg-primary-soft" : ""
                     }`}
                   >
-                    <span className="font-medium">{e.nombre}</span>
-                    {e.direccion && (
-                      <span className="text-sm text-muted">{e.direccion}</span>
-                    )}
+                    <span className="esc-num">{e.id}</span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="font-medium">{e.nombre}</span>
+                      {e.direccion && (
+                        <span className="text-sm text-muted">{e.direccion}</span>
+                      )}
+                    </span>
                   </button>
                 </li>
               ))

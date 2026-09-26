@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import { ErrorMsg } from "@/components/ui";
+import { Buscador, ErrorMsg } from "@/components/ui";
 import { nombreCompleto } from "@/lib/usuarios";
 import {
   cambiarActiva,
@@ -56,8 +56,8 @@ export function EscuelasAdmin({
   return (
     <>
       {supervisores.length === 0 || inspectores.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border p-5 text-center">
-          <p className="font-medium">Cada escuela necesita un supervisor y un inspector.</p>
+        <div className="tarjeta flex flex-col items-center p-6 text-center">
+          <p className="font-semibold">Cada escuela necesita un supervisor y un inspector.</p>
           <p className="mt-1 text-sm text-muted">
             {supervisores.length === 0 && inspectores.length === 0
               ? "Todavía no hay supervisores ni inspectores activos."
@@ -74,31 +74,24 @@ export function EscuelasAdmin({
       )}
 
       <section className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[13px] font-semibold text-muted">
             {activas} activa{activas === 1 ? "" : "s"}
             {desactivadas > 0 && ` · ${desactivadas} desactivada${desactivadas === 1 ? "" : "s"}`}
           </h2>
           {escuelas.length > 5 && (
-            <input
-              type="search"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar escuela, supervisor…"
-              aria-label="Buscar"
-              className="input h-10 sm:w-72"
-            />
+            <Buscador value={busqueda} onChange={setBusqueda} placeholder="Buscar escuela, supervisor o inspector" />
           )}
         </div>
 
         {escuelas.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted">
+          <p className="tarjeta px-5 py-12 text-center text-muted">
             Todavía no cargaste ninguna escuela.
           </p>
         ) : filtradas.length === 0 ? (
           <p className="p-4 text-center text-sm text-muted">No hay escuelas que coincidan.</p>
         ) : (
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
+          <ul className="tarjeta divide-y divide-border overflow-hidden">
             {filtradas.map((e) => (
               <EscuelaFila key={e.id} escuela={e} {...equipo} />
             ))}
@@ -152,7 +145,7 @@ function SelectPersona({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className="text-sm font-semibold">{label}</span>
       <select name={name} defaultValue={value} className="input">
         <option value="" disabled>
           Elegí {label.toLowerCase()}…
@@ -178,7 +171,7 @@ function NuevaEscuela(equipo: Equipo) {
   const [state, action, pending] = useActionState(crearEscuela, vacio);
 
   return (
-    <form action={action} className="flex flex-col gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border">
+    <form action={action} className="tarjeta flex flex-col gap-4 p-[18px] pc:p-[22px]">
       <h2 className="font-semibold">Agregar escuela</h2>
       <CamposEscuela key={state.intento} valores={state.valores} {...equipo} />
       {state.error && <ErrorMsg mensaje={state.error} />}
@@ -210,7 +203,7 @@ function EscuelaFila({ escuela: e, ...equipo }: { escuela: Escuela } & Equipo) {
 
   if (editando) {
     return (
-      <li className="p-4">
+      <li className="bg-fila-hover p-4 pc:px-5">
         <form action={action} className="flex flex-col gap-3">
           <CamposEscuela key={state.intento} valores={state.valores} autoFocus {...equipo} />
           {state.error && <ErrorMsg mensaje={state.error} />}
@@ -228,32 +221,35 @@ function EscuelaFila({ escuela: e, ...equipo }: { escuela: Escuela } & Equipo) {
   }
 
   return (
-    <li className={`flex flex-col gap-2 p-4 sm:flex-row sm:items-center ${e.activa ? "" : "opacity-60"}`}>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium">
-          {e.nombre}
-          {!e.activa && (
-            <span className="ml-2 rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted ring-1 ring-border">
-              Desactivada
+    <li className={`flex flex-col gap-2 px-4 py-3.5 hover:bg-fila-hover sm:flex-row sm:items-center pc:px-5 ${e.activa ? "" : "opacity-60"}`}>
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <span className="esc-num mt-0.5">{e.id}</span>
+        <div className="min-w-0">
+          <p className="font-semibold">
+            {e.nombre}
+            {!e.activa && (
+              <span className="ml-2 inline-flex h-[22px] items-center rounded-full bg-[#eef0f3] px-2 align-middle text-xs font-semibold text-[#475467]">
+                Desactivada
+              </span>
+            )}
+          </p>
+          {e.direccion && <p className="truncate text-[13px] text-muted">{e.direccion}</p>}
+          <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[13.5px]">
+            <span>
+              <span className="text-muted">Supervisor:</span> {nombreCompleto(e.supervisor)}
             </span>
-          )}
-        </p>
-        {e.direccion && <p className="truncate text-sm text-muted">{e.direccion}</p>}
-        <p className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-sm">
-          <span>
-            <span className="text-muted">Supervisor:</span> {nombreCompleto(e.supervisor)}
-          </span>
-          <span>
-            <span className="text-muted">Inspector:</span> {nombreCompleto(e.inspector)}
-          </span>
-        </p>
+            <span>
+              <span className="text-muted">Inspector:</span> {nombreCompleto(e.inspector)}
+            </span>
+          </p>
+        </div>
       </div>
-      <div className="-ml-3 flex shrink-0 sm:ml-0">
-        <button type="button" onClick={() => setEditando(true)} className="rounded-lg px-3 py-2 text-sm font-medium text-primary hover:bg-background">
+      <div className="flex shrink-0 gap-1.5 pl-[38px] sm:pl-0">
+        <button type="button" onClick={() => setEditando(true)} className="btn-secondary btn-chico">
           Editar
         </button>
         <form action={cambiarActiva.bind(null, e.id, !e.activa)}>
-          <button type="submit" className="rounded-lg px-3 py-2 text-sm font-medium text-muted hover:bg-background">
+          <button type="submit" className="btn-secondary btn-chico text-muted">
             {e.activa ? "Desactivar" : "Activar"}
           </button>
         </form>

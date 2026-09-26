@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { IconoCamara, IconoX } from "./iconos";
 
 export type FotoLocal = { id: string; file: File; url: string };
 
@@ -11,7 +12,7 @@ export function idUnico() {
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-// Grilla de miniaturas + boton para agregar. Sin `capture` para que el
+// Miniaturas + recuadro para sumar fotos. Sin `capture` para que el
 // celular ofrezca elegir entre camara y galeria.
 export function FotosInput({
   fotos,
@@ -50,38 +51,41 @@ export function FotosInput({
   };
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-      {fotos.map((f, i) => (
-        <div key={f.id} className="relative aspect-square overflow-hidden rounded-xl bg-surface ring-1 ring-border">
-          {/* eslint-disable-next-line @next/next/no-img-element -- blob local, next/image no aplica */}
-          <img src={f.url} alt={`Foto ${i + 1}`} className="size-full object-cover" />
-          {!disabled && (
-            <button
-              type="button"
-              onClick={() => quitar(f.id)}
-              aria-label={`Quitar foto ${i + 1}`}
-              className="absolute right-1 top-1 flex size-8 items-center justify-center rounded-full bg-black/60 text-white"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="size-4" aria-hidden>
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
-          )}
+    <div className="flex flex-col gap-2.5">
+      {fotos.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {fotos.map((f, i) => (
+            <div key={f.id} className="relative aspect-[4/3] overflow-hidden rounded-[10px] bg-[#eef0f3]">
+              {/* eslint-disable-next-line @next/next/no-img-element -- blob local, next/image no aplica */}
+              <img src={f.url} alt={`Foto ${i + 1}`} className="size-full object-cover" />
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => quitar(f.id)}
+                  aria-label={`Quitar foto ${i + 1}`}
+                  className="absolute right-1.5 top-1.5 grid size-8 place-items-center rounded-full bg-black/60 text-white"
+                >
+                  <IconoX className="size-4" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
       {fotos.length < max && (
         <label
-          className={`flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-muted transition-colors hover:border-primary hover:text-primary ${
+          className={`flex cursor-pointer items-center gap-3.5 rounded-xl border-[1.5px] border-dashed border-border-strong p-4 text-sm text-muted transition-colors hover:border-primary hover:text-foreground ${
             disabled ? "pointer-events-none opacity-50" : ""
           }`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-7" aria-hidden>
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-          <span className="text-xs font-medium">
-            {fotos.length === 0 ? "Agregar fotos" : "Agregar"}
+          <span className="grid size-11 shrink-0 place-items-center rounded-[10px] bg-background text-foreground">
+            <IconoCamara />
+          </span>
+          <span>
+            <b className="text-foreground">{fotos.length === 0 ? "Sumar fotos" : "Sumar otra foto"}</b>
+            <br />
+            Así saben qué buscar cuando llegan
           </span>
           <input
             ref={input}

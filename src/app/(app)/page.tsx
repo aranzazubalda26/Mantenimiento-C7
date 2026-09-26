@@ -1,148 +1,262 @@
 import Link from "next/link";
-import { AppHeader } from "@/components/app-header";
-import { EstadoBadge, PrioridadBadge } from "@/components/badges";
+import { AppHeader, Pagina } from "@/components/app-header";
+import { PrioridadBadge } from "@/components/badges";
+import {
+  IconoAlerta,
+  IconoFlecha,
+  IconoLlave,
+  IconoMas,
+  IconoOk,
+  IconoTareas,
+} from "@/components/iconos";
+import { ListaOrdenes, type OrdenLista } from "@/components/lista-ordenes";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
-import { formatFecha } from "@/lib/fechas";
-import type { Estado, Prioridad } from "@/lib/ordenes";
+import { saludo } from "@/lib/fechas";
+import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
-import { ROL_LABEL } from "@/lib/usuarios";
 
-type OrdenFila = {
+type Resumida = { id: number; escuela_id: number; estado: Estado; prioridad: Prioridad };
+type Urgente = {
   id: number;
-  fecha: string;
   descripcion: string;
   prioridad: Prioridad;
-  estado: Estado;
   ubicacion: string;
+  escuela_id: number;
   escuelas: { nombre: string } | null;
+};
+
+const SELECT_LISTA =
+  "id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(nombre), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)";
+
+// Colores de la barrita por estado (mismos que las pastillas)
+const COLOR_ESTADO: Record<Estado, string> = {
+  pendiente: "#F79009",
+  en_proceso: "#2E6BE6",
+  finalizada: "#D0D5DD",
 };
 
 export default async function Home() {
   const usuario = await getUsuario();
-  const esAdmin = usuario.rol === "admin";
   const supabase = await createClient();
+  const esAdmin = usuario.rol === "admin";
 
-  // RLS filtra: el admin recibe todas; supervisor/inspector las de sus escuelas
-  // (y el inspector ademas las que creo)
-  const [{ data: ordenes }, { count: cantEscuelas }, { count: cantUsuarios }] = await Promise.all([
+  // Escuelas del tablero: el admin ve todas; el resto, las asignadas
+  let qEscuelas = supabase.from("escuelas").select("id, nombre").eq("activa", true).order("nombre");
+  if (!esAdmin) {
+    qEscuelas = qEscuelas.or(`inspector_id.eq.${usuario.id},supervisor_id.eq.${usuario.id}`);
+  }
+
+  // RLS filtra las ordenes: el admin todas; supervisor/inspector las de sus escuelas
+  const [{ data: todas }, { data: recientes }, { data: urgentes }, { data: escuelas }] = await Promise.all([
+    supabase.from("ordenes_trabajo").select("id, escuela_id, estado, prioridad").returns<Resumida[]>(),
     supabase
       .from("ordenes_trabajo")
-      .select("id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(nombre)")
+      .select(SELECT_LISTA)
       .order("created_at", { ascending: false })
-      .limit(30)
-      .returns<OrdenFila[]>(),
-    esAdmin
-      ? supabase.from("escuelas").select("*", { count: "exact", head: true })
-      : Promise.resolve({ count: null }),
-    esAdmin
-      ? supabase.from("perfiles").select("*", { count: "exact", head: true }).eq("activo", true)
-      : Promise.resolve({ count: null }),
+      .limit(15)
+      .returns<OrdenLista[]>(),
+    supabase
+      .from("ordenes_trabajo")
+      .select("id, descripcion, prioridad, ubicacion, escuela_id, escuelas(nombre)")
+      .eq("estado", "pendiente")
+      .in("prioridad", ["urgente", "alta"])
+      .order("prioridad", { ascending: false }) // "urgente" > "alta" alfabeticamente
+      .order("created_at", { ascending: true })
+      .limit(8)
+      .returns<Urgente[]>(),
+    qEscuelas,
   ]);
+
+  const ordenes = todas ?? [];
+  const cuenta = (f: (o: Resumida) => boolean) => ordenes.filter(f).length;
+  const nUrgentes = cuenta((o) => o.estado === "pendiente" && o.prioridad === "urgente");
+  const nPendientes = cuenta((o) => o.estado === "pendiente");
+  const nEnProceso = cuenta((o) => o.estado === "en_proceso");
+  const nFinalizadas = cuenta((o) => o.estado === "finalizada");
+
+  const resumen = [
+    { n: nUrgentes, titulo: "Urgentes sin empezar", sub: nUrgentes ? "Necesitan atención ya" : "Todo bajo control", color: "#B42318", fondo: "#FEE4E2", icono: <IconoAlerta /> },
+    { n: nPendientes, titulo: "Pendientes", sub: nPendientes ? "Todavía no se empezaron" : "Nada pendiente", color: "#93370D", fondo: "#FEF0C7", icono: <IconoTareas /> },
+    { n: nEnProceso, titulo: "En proceso", sub: nEnProceso ? "Se están trabajando" : "Nada en curso", color: "#1E40AF", fondo: "#DCE8FD", icono: <IconoLlave /> },
+    { n: nFinalizadas, titulo: "Finalizadas", sub: "Desde el inicio", color: "#475467", fondo: "#EEF0F3", icono: <IconoOk /> },
+  ];
+
+  const titular = !usuario.rol
+    ? "Tu usuario no está habilitado"
+    : nUrgentes
+      ? "Esto es lo que necesita tu atención"
+      : "Todo en orden por ahora";
 
   return (
     <>
-      <AppHeader titulo="Inicio" />
+      <AppHeader titulo={usuario.nombre ? `Hola, ${usuario.nombre}` : "Inicio"}>
+        {puedeCrearOrdenes(usuario) && (
+          <Link href="/ordenes/nueva" className="btn-primary" aria-label="Nueva orden">
+            <IconoMas className="size-[18px]" />
+            <span className="hidden pc:inline">Nueva orden</span>
+          </Link>
+        )}
+      </AppHeader>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-5">
-        <div>
-          <p className="text-xl font-semibold tracking-tight">
-            Hola{usuario.nombre ? `, ${usuario.nombre}` : ""}
-          </p>
-          <p className="truncate text-sm text-muted">
-            {usuario.rol ? ROL_LABEL[usuario.rol] : usuario.email}
-          </p>
+      <Pagina>
+        <div className="text-[15px] text-muted">
+          {saludo()}
+          <b className="block text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">
+            {titular}
+          </b>
         </div>
 
         {!usuario.rol ? (
-          <p className="rounded-2xl bg-surface p-5 text-sm text-muted ring-1 ring-border">
-            Tu usuario no está habilitado. Pedile al administrador que lo revise.
-          </p>
-        ) : puedeCrearOrdenes(usuario) ? (
-          <Link
-            href="/ordenes/nueva"
-            className="flex items-center gap-4 rounded-2xl bg-primary p-5 text-primary-fg shadow-sm transition-colors hover:bg-primary-hover active:scale-[0.99]"
-          >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="size-6" aria-hidden>
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </span>
-            <span>
-              <span className="block text-lg font-semibold">Nueva orden de trabajo</span>
-              <span className="block text-sm opacity-85">Reportar una tarea en una escuela</span>
-            </span>
-          </Link>
-        ) : null}
-
-        {esAdmin && (
-          <div className="grid grid-cols-2 gap-3">
-            <Acceso
-              href="/admin/escuelas"
-              titulo="Escuelas"
-              detalle={`${cantEscuelas ?? 0} cargada${cantEscuelas === 1 ? "" : "s"}`}
-            />
-            <Acceso
-              href="/admin/usuarios"
-              titulo="Usuarios"
-              detalle={`${cantUsuarios ?? 0} activo${cantUsuarios === 1 ? "" : "s"}`}
-            />
-          </div>
-        )}
-
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-            {esAdmin ? "Últimas órdenes" : usuario.rol === "supervisor" ? "Órdenes de mis escuelas" : "Mis órdenes"}
-          </h2>
-
-          {!ordenes?.length ? (
-            <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted">
-              Todavía no hay órdenes de trabajo.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-2.5">
-              {ordenes.map((o) => (
-                <li key={o.id}>
-                  <Link
-                    href={`/ordenes/${o.id}`}
-                    className="flex flex-col gap-1.5 rounded-2xl bg-surface p-4 ring-1 ring-border transition-colors hover:ring-primary"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="min-w-0 font-semibold leading-snug">
-                        {o.escuelas?.nombre ?? "Escuela"}
-                      </span>
-                      <PrioridadBadge prioridad={o.prioridad} />
-                    </div>
-                    <p className="line-clamp-2 text-sm">{o.descripcion}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                      <EstadoBadge estado={o.estado} />
-                      <span>#{o.id}</span>
-                      <span>{formatFecha(o.fecha)}</span>
-                      <span className="min-w-0 truncate">{o.ubicacion}</span>
-                    </div>
-                  </Link>
-                </li>
+          <p className="tarjeta p-5 text-muted">Pedile al administrador que revise tu usuario.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2.5 min-[1180px]:grid-cols-4 min-[1180px]:gap-3.5">
+              {resumen.map((r) => (
+                <div key={r.titulo} className="tarjeta grid grid-cols-[auto_1fr] items-center gap-x-3 p-3.5 pc:px-[18px] pc:py-4">
+                  <span className="grid size-9 place-items-center rounded-[10px]" style={{ background: r.fondo, color: r.color }}>
+                    {r.icono}
+                  </span>
+                  <span className="justify-self-end text-[26px] leading-none font-bold tracking-[-0.02em] tabular-nums pc:text-[30px]">
+                    {r.n}
+                  </span>
+                  <span className="col-span-2 mt-3.5 text-[14.5px] font-semibold">{r.titulo}</span>
+                  <span className="col-span-2 text-[13px] text-muted">{r.sub}</span>
+                </div>
               ))}
-            </ul>
-          )}
-        </section>
-      </main>
+            </div>
+
+            <div className="grid items-start gap-5 min-[1180px]:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+              <div className="flex min-w-0 flex-col gap-5">
+                <Panel titulo="Urgentes y altas sin empezar" contador={urgentes?.length}>
+                  {!urgentes?.length ? (
+                    <p className="px-5 py-6 text-sm text-muted">No hay nada urgente sin empezar.</p>
+                  ) : (
+                    <ul>
+                      {urgentes.map((o) => (
+                        <li key={o.id} className="border-b border-border last:border-b-0">
+                          <Link href={`/ordenes/${o.id}`} className="flex items-start gap-3 px-4 py-3.5 hover:bg-fila-hover pc:items-center pc:px-5">
+                            <span className="esc-num">{o.escuela_id}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block font-semibold pc:truncate">{o.descripcion}</span>
+                              <span className="block text-[13px] text-muted">
+                                <span className="num">{numeroOrden(o.id)}</span> · {o.escuelas?.nombre}, {o.ubicacion}
+                              </span>
+                            </span>
+                            <PrioridadBadge prioridad={o.prioridad} />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Panel>
+
+                <section className="flex flex-col gap-3">
+                  <h2 className="text-base font-semibold tracking-[-0.01em]">
+                    {esAdmin ? "Últimas órdenes" : usuario.rol === "supervisor" ? "Órdenes de mis escuelas" : "Mis órdenes"}
+                  </h2>
+                  <ListaOrdenes
+                    ordenes={recientes ?? []}
+                    vacio={
+                      <>
+                        Todavía no hay órdenes de trabajo.
+                        {puedeCrearOrdenes(usuario) && (
+                          <>
+                            <br />
+                            <Link href="/ordenes/nueva" className="btn-secondary mt-3.5">
+                              Crear una orden
+                            </Link>
+                          </>
+                        )}
+                      </>
+                    }
+                  />
+                </section>
+              </div>
+
+              <Panel
+                titulo={esAdmin ? "Escuelas" : "Mis escuelas"}
+                accion={esAdmin ? { href: "/admin/escuelas", texto: "Administrar" } : undefined}
+              >
+                {!escuelas?.length ? (
+                  <p className="px-5 py-6 text-sm text-muted">
+                    {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
+                  </p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2.5 px-4 pb-1.5 pt-3.5 pc:grid-cols-[repeat(auto-fill,minmax(168px,1fr))] pc:px-5 pc:pb-2 pc:pt-4">
+                      {escuelas.map((e) => {
+                        const suyas = ordenes.filter((o) => o.escuela_id === e.id);
+                        const n = (est: Estado) => suyas.filter((o) => o.estado === est).length;
+                        const abiertas = suyas.length - n("finalizada");
+                        const urgente = suyas.some((o) => o.estado === "pendiente" && o.prioridad === "urgente");
+                        return (
+                          <div key={e.id} className="flex flex-col gap-1.5 rounded-xl border border-border p-3.5">
+                            <span className="esc-num">{e.id}</span>
+                            <span className="font-semibold leading-snug">{e.nombre}</span>
+                            <span className="text-[13px] text-muted">
+                              {abiertas ? `${abiertas} ${abiertas === 1 ? "orden abierta" : "órdenes abiertas"}` : "Sin órdenes abiertas"}
+                            </span>
+                            <span className="mt-1 flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-background">
+                              {(["pendiente", "en_proceso", "finalizada"] as Estado[]).map((est) =>
+                                n(est) ? <span key={est} style={{ flex: n(est), background: COLOR_ESTADO[est] }} /> : null,
+                              )}
+                            </span>
+                            {urgente && (
+                              <span className="mt-0.5">
+                                <PrioridadBadge prioridad="urgente" />
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-wrap gap-3.5 px-4 pb-4 pt-1.5 text-[12.5px] text-muted pc:px-5">
+                      {(["pendiente", "en_proceso", "finalizada"] as Estado[]).map((est) => (
+                        <span key={est} className="inline-flex items-center gap-1.5">
+                          <i className="inline-block size-2.5 rounded-[3px]" style={{ background: COLOR_ESTADO[est] }} />
+                          {est === "pendiente" ? "Pendientes" : est === "en_proceso" ? "En proceso" : "Finalizadas"}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </Panel>
+            </div>
+          </>
+        )}
+      </Pagina>
     </>
   );
 }
 
-function Acceso({ href, titulo, detalle }: { href: string; titulo: string; detalle: string }) {
+function Panel({
+  titulo,
+  contador,
+  accion,
+  children,
+}: {
+  titulo: string;
+  contador?: number;
+  accion?: { href: string; texto: string };
+  children: React.ReactNode;
+}) {
   return (
-    <Link
-      href={href}
-      className="flex items-center justify-between gap-2 rounded-2xl bg-surface p-4 ring-1 ring-border transition-colors hover:ring-primary"
-    >
-      <span className="min-w-0">
-        <span className="block font-semibold">{titulo}</span>
-        <span className="block truncate text-sm text-muted">{detalle}</span>
-      </span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5 shrink-0 text-muted" aria-hidden>
-        <path d="M9 6l6 6-6 6" />
-      </svg>
-    </Link>
+    <section className="tarjeta overflow-hidden">
+      <div className="flex items-center gap-2.5 border-b border-border px-4 py-4 pc:px-5">
+        <h2 className="text-base font-semibold tracking-[-0.01em]">{titulo}</h2>
+        {!!contador && (
+          <span className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-danger px-[7px] text-xs font-semibold text-white">
+            {contador}
+          </span>
+        )}
+        {accion && (
+          <Link href={accion.href} className="ml-auto flex min-h-8 items-center gap-1 text-[13.5px] font-medium text-primary hover:underline">
+            {accion.texto}
+            <IconoFlecha className="size-3.5" />
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
   );
 }

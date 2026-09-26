@@ -5,36 +5,38 @@ import {
   type Prioridad,
 } from "@/lib/ordenes";
 
-const PRIORIDAD_CLASES: Record<Prioridad, string> = {
-  baja: "bg-slate-500/12 text-slate-600 dark:text-slate-300",
-  media: "bg-sky-500/12 text-sky-700 dark:text-sky-300",
-  alta: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  urgente: "bg-red-500/15 text-red-700 dark:text-red-300",
-};
-
+// Colores del diseño de referencia
 const ESTADO_CLASES: Record<Estado, string> = {
-  pendiente: "border-amber-500/40 text-amber-700 dark:text-amber-300",
-  en_proceso: "border-sky-500/40 text-sky-700 dark:text-sky-300",
-  finalizada: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  pendiente: "bg-[#fef0c7] text-[#93370d]",
+  en_proceso: "bg-[#dce8fd] text-[#1e40af]",
+  finalizada: "bg-[#eef0f3] text-[#475467]",
 };
 
-export function PrioridadBadge({ prioridad }: { prioridad: Prioridad }) {
+const PRIORIDAD_CLASES: Record<Prioridad, string> = {
+  baja: "bg-[#eef0f3] text-[#475467]",
+  media: "bg-[#eef0f3] text-[#344054]",
+  alta: "bg-[#ffead5] text-[#b93815]",
+  urgente: "bg-danger-soft text-danger",
+};
+
+export function EstadoBadge({ estado, chico }: { estado: Estado; chico?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${PRIORIDAD_CLASES[prioridad]}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full font-semibold before:size-1.5 before:rounded-full before:bg-current ${
+        chico ? "h-[22px] px-2 text-[11.5px]" : "h-[26px] px-2.5 text-[12.5px]"
+      } ${ESTADO_CLASES[estado]}`}
     >
-      {prioridad === "urgente" && <span aria-hidden>!</span>}
-      {PRIORIDAD_LABEL[prioridad]}
+      {ESTADO_LABEL[estado]}
     </span>
   );
 }
 
-export function EstadoBadge({ estado }: { estado: Estado }) {
+export function PrioridadBadge({ prioridad }: { prioridad: Prioridad }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${ESTADO_CLASES[estado]}`}
+      className={`inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded-full px-2 text-xs font-semibold ${PRIORIDAD_CLASES[prioridad]}`}
     >
-      {ESTADO_LABEL[estado]}
+      {PRIORIDAD_LABEL[prioridad]}
     </span>
   );
 }

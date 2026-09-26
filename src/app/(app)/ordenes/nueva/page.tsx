@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader, Pagina } from "@/components/app-header";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import { hoyISO } from "@/lib/fechas";
 import { createClient } from "@/lib/supabase/server";
@@ -25,14 +25,16 @@ export default async function NuevaOrdenPage() {
   return (
     <>
       <AppHeader titulo="Nueva orden" />
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 py-5">
-        <NuevaOrdenForm
-          escuelas={escuelas ?? []}
-          usuarioId={usuario.id}
-          hoy={hoyISO()}
-          esAdmin={usuario.rol === "admin"}
-        />
-      </main>
+      <Pagina>
+        <div className="w-full max-w-[720px]">
+          <NuevaOrdenForm
+            escuelas={escuelas ?? []}
+            usuarioId={usuario.id}
+            hoy={hoyISO()}
+            esAdmin={usuario.rol === "admin"}
+          />
+        </div>
+      </Pagina>
     </>
   );
 }

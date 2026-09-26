@@ -22,7 +22,7 @@ export function LoginForm({ loginRapido }: { loginRapido: boolean }) {
     <div className="flex flex-col gap-5">
       <form action={formAction} className="flex flex-col gap-5" noValidate>
         <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="text-sm font-medium">
+          <label htmlFor="email" className="text-sm font-semibold">
             Email
           </label>
           <input
@@ -41,7 +41,7 @@ export function LoginForm({ loginRapido }: { loginRapido: boolean }) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="password" className="text-sm font-medium">
+          <label htmlFor="password" className="text-sm font-semibold">
             Contraseña
           </label>
           <div className="relative">
@@ -68,7 +68,7 @@ export function LoginForm({ loginRapido }: { loginRapido: boolean }) {
 
         {state.error && <Error mensaje={state.error} />}
 
-        <button type="submit" disabled={ocupado} className="btn-primary mt-1">
+        <button type="submit" disabled={ocupado} className="btn-primary mt-1 min-h-[50px]">
           {pending ? "Ingresando…" : "Ingresar"}
         </button>
       </form>
@@ -94,7 +94,7 @@ function Error({ mensaje }: { mensaje: string }) {
   return (
     <p
       role="alert"
-      className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger"
+      className="rounded-[10px] bg-danger-soft px-3.5 py-3 text-sm font-medium text-danger"
     >
       {mensaje}
     </p>

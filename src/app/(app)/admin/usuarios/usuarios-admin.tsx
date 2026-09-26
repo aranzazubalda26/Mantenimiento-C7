@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState, useTransition } from "react";
+import { IconoMas, IconoOk } from "@/components/iconos";
 import { ErrorMsg } from "@/components/ui";
 import { generarPassword } from "@/lib/generar-password";
 import { MIN_PASSWORD, ROLES, ROL_LABEL, type Rol } from "@/lib/usuarios";
@@ -25,9 +26,9 @@ export type UsuarioFila = {
 };
 
 const ROL_CLASES: Record<Rol, string> = {
-  admin: "bg-violet-500/12 text-violet-700 dark:text-violet-300",
-  supervisor: "bg-sky-500/12 text-sky-700 dark:text-sky-300",
-  inspector: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+  admin: "bg-[#ede7fe] text-[#5b21b6]",
+  supervisor: "bg-[#dce8fd] text-[#1e40af]",
+  inspector: "bg-primary-soft text-primary",
 };
 
 type Filtro = Rol | "todos";
@@ -48,28 +49,21 @@ export function UsuariosAdmin({ usuarios, miId }: { usuarios: UsuarioFila[]; miI
       <NuevoUsuario />
 
       <section className="flex flex-col gap-3">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div className="segmento w-max" role="group" aria-label="Filtrar por rol">
           {(["todos", ...ROLES] as Filtro[]).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFiltro(f)}
-              aria-pressed={filtro === f}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors ${
-                filtro === f ? "bg-foreground text-background ring-foreground" : "bg-surface ring-border"
-              }`}
-            >
-              {f === "todos" ? "Todos" : `${ROL_LABEL[f]}${f === "admin" ? "" : "es"}`} ({conteo[f]})
+            <button key={f} type="button" onClick={() => setFiltro(f)} aria-pressed={filtro === f}>
+              {f === "todos" ? "Todos" : `${ROL_LABEL[f]}${f === "admin" ? "" : "es"}`}
+              <span className="text-xs font-normal text-muted">{conteo[f]}</span>
             </button>
           ))}
         </div>
 
         {visibles.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted">
+          <p className="tarjeta px-5 py-12 text-center text-muted">
             No hay usuarios con ese rol.
           </p>
         ) : (
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
+          <ul className="tarjeta divide-y divide-border overflow-hidden">
             {visibles.map((u) => (
               <Fila key={u.id} usuario={u} esYo={u.id === miId} />
             ))}
@@ -113,14 +107,15 @@ function NuevoUsuario() {
 
   if (!abierto) {
     return (
-      <button type="button" onClick={() => setAbierto(true)} className="btn-primary">
-        + Nuevo usuario
+      <button type="button" onClick={() => setAbierto(true)} className="btn-primary self-start">
+        <IconoMas className="size-[18px]" />
+        Nuevo usuario
       </button>
     );
   }
 
   return (
-    <form action={action} noValidate className="flex flex-col gap-4 rounded-2xl bg-surface p-4 ring-1 ring-border">
+    <form action={action} noValidate className="tarjeta flex flex-col gap-4 p-[18px] pc:p-[22px]">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Nuevo usuario</h2>
         <button type="button" onClick={() => setAbierto(false)} className="text-sm font-medium text-muted">
@@ -171,7 +166,7 @@ function PasswordInput({ value, onChange }: { value: string; onChange: (v: strin
           spellCheck={false}
           className="input font-mono"
         />
-        <button type="button" onClick={() => onChange(generarPassword())} className="btn-secondary h-12 shrink-0">
+        <button type="button" onClick={() => onChange(generarPassword())} className="btn-secondary min-h-[46px] shrink-0">
           Generar
         </button>
       </div>
@@ -206,10 +201,10 @@ function Credenciales({
   };
 
   return (
-    <div role="status" className="flex flex-col gap-3 rounded-2xl bg-emerald-500/10 p-4 ring-1 ring-emerald-500/30">
-      <p className="font-semibold text-emerald-800 dark:text-emerald-300">Usuario creado: {nombre}</p>
+    <div role="status" className="tarjeta flex flex-col gap-3 border-primary/30 bg-primary-soft p-[18px]">
+      <p className="flex items-center gap-2 font-semibold text-primary"><IconoOk className="size-[18px]" />Usuario creado: {nombre}</p>
       <p className="text-sm">Pasale estos datos para que pueda ingresar:</p>
-      <pre className="select-all overflow-x-auto rounded-xl bg-surface p-3 font-mono text-sm ring-1 ring-border">{texto}</pre>
+      <pre className="num select-all overflow-x-auto rounded-[10px] border border-border bg-surface p-3 text-sm">{texto}</pre>
       <div className="flex gap-2">
         <button type="button" onClick={copiar} className="btn-secondary h-11 flex-1">
           {copiado ? "¡Copiado!" : "Copiar"}
@@ -249,7 +244,7 @@ function Fila({ usuario: u, esYo }: { usuario: UsuarioFila; esYo: boolean }) {
 
   if (modo === "password") {
     return (
-      <li className="p-4">
+      <li className="bg-fila-hover p-4 pc:px-5">
         <form action={passAction} className="flex flex-col gap-3">
           <p className="text-sm">
             Nueva contraseña para <strong>{u.nombre} {u.apellido}</strong>
@@ -258,8 +253,8 @@ function Fila({ usuario: u, esYo }: { usuario: UsuarioFila; esYo: boolean }) {
           {passState.error && <ErrorMsg mensaje={passState.error} />}
           {passState.ok ? (
             <div role="status" className="flex flex-col gap-3">
-              <p className="rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">
-                Contraseña cambiada. Pasale la nueva: <span className="select-all font-mono font-semibold">{password}</span>
+              <p className="rounded-[10px] bg-primary-soft px-3.5 py-3 text-sm font-medium text-primary">
+                Contraseña cambiada. Pasale la nueva: <span className="num select-all font-semibold">{password}</span>
               </p>
               <button type="button" onClick={() => { setModo("ver"); setPassword(""); }} className="btn-secondary h-11">
                 Listo
@@ -274,29 +269,32 @@ function Fila({ usuario: u, esYo }: { usuario: UsuarioFila; esYo: boolean }) {
   }
 
   return (
-    <li className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center ${u.activo ? "" : "bg-background/60"}`}>
-      <div className={`min-w-0 flex-1 ${u.activo ? "" : "opacity-60"}`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">
-            {u.nombre} {u.apellido}
-          </span>
-          {esYo && <span className="text-xs text-muted">(vos)</span>}
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ROL_CLASES[u.rol]}`}>
-            {ROL_LABEL[u.rol]}
-          </span>
-          {!u.activo && (
-            <span className="rounded-full px-2 py-0.5 text-xs font-medium text-muted ring-1 ring-border">
-              Desactivado
+    <li className="flex flex-col gap-3 px-4 py-3.5 hover:bg-fila-hover sm:flex-row sm:flex-wrap sm:items-center pc:px-5">
+      <div className={`flex min-w-0 flex-1 items-center gap-3 ${u.activo ? "" : "opacity-60"}`}>
+        <span className="avatar">{`${u.nombre[0] ?? ""}${u.apellido[0] ?? ""}`.toUpperCase()}</span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold">
+              {u.nombre} {u.apellido}
             </span>
-          )}
+            {esYo && <span className="text-xs text-muted">(vos)</span>}
+            <span className={`inline-flex h-[22px] items-center rounded-full px-2 text-xs font-semibold ${ROL_CLASES[u.rol]}`}>
+              {ROL_LABEL[u.rol]}
+            </span>
+            {!u.activo && (
+              <span className="inline-flex h-[22px] items-center rounded-full bg-[#eef0f3] px-2 text-xs font-semibold text-[#475467]">
+                Desactivado
+              </span>
+            )}
+          </div>
+          <p className="truncate text-[13px] text-muted">
+            {u.email}
+            {u.rol !== "admin" && ` · ${u.escuelas} escuela${u.escuelas === 1 ? "" : "s"}`}
+          </p>
         </div>
-        <p className="truncate text-sm text-muted">
-          {u.email}
-          {u.rol !== "admin" && ` · ${u.escuelas} escuela${u.escuelas === 1 ? "" : "s"}`}
-        </p>
-        {errorActivo && <p className="mt-2 text-sm text-danger">{errorActivo}</p>}
       </div>
-      <div className="-ml-3 flex shrink-0 flex-wrap sm:ml-0">
+      {errorActivo && <p className="text-sm font-medium text-danger sm:order-last sm:basis-full">{errorActivo}</p>}
+      <div className="flex shrink-0 gap-1.5 *:flex-1 sm:*:flex-none">
         <Accion onClick={() => setModo("editar")} principal>
           Editar
         </Accion>
@@ -337,7 +335,7 @@ function EditarUsuario({
   const v = state.valores;
 
   return (
-    <li className="p-4">
+    <li className="bg-fila-hover p-4 pc:px-5">
       <form action={action} noValidate className="flex flex-col gap-3">
         <div key={state.intento} className="grid gap-3 sm:grid-cols-2">
           <input name="nombre" defaultValue={v.nombre} placeholder="Nombre" aria-label="Nombre" autoFocus className="input" />
@@ -389,7 +387,7 @@ function Accion({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg px-3 py-2 text-sm font-medium hover:bg-background ${principal ? "text-primary" : "text-muted"}`}
+      className={`btn-secondary btn-chico ${principal ? "" : "text-muted"}`}
     >
       {children}
     </button>

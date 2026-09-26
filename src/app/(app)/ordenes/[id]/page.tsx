@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader, Pagina } from "@/components/app-header";
 import { EstadoBadge, PrioridadBadge } from "@/components/badges";
+import { IconoAtras, IconoLugar, IconoOk } from "@/components/iconos";
 import { getUsuario } from "@/lib/auth";
-import { formatFecha, formatFechaHora } from "@/lib/fechas";
-import type { Estado, Prioridad } from "@/lib/ordenes";
+import { fechaCorta, formatFecha, formatFechaHora, formatHora } from "@/lib/fechas";
+import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 import { nombreCompleto } from "@/lib/usuarios";
 
@@ -18,7 +20,7 @@ type Orden = {
   estado: Estado;
   ubicacion: string;
   created_at: string;
-  escuelas: { nombre: string; direccion: string | null } | null;
+  escuelas: { id: number; nombre: string; direccion: string | null } | null;
   creador: { nombre: string; apellido: string } | null;
   orden_fotos: { id: number; path: string }[];
 };
@@ -30,11 +32,11 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   if (!/^\d+$/.test(id)) notFound();
 
   const supabase = await createClient();
-  // RLS: si la orden no es del usuario (y no es admin) no vuelve nada -> 404
+  // RLS: si el usuario no puede ver la orden no vuelve nada -> 404
   const { data: orden } = await supabase
     .from("ordenes_trabajo")
     .select(
-      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, escuelas(nombre, direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido), orden_fotos(id, path)",
+      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, escuelas(id, nombre, direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido), orden_fotos(id, path)",
     )
     .eq("id", Number(id))
     .maybeSingle<Orden>();
@@ -47,82 +49,94 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
         .createSignedUrls(orden.orden_fotos.map((f) => f.path), 60 * 60)
     : { data: [] };
 
+  const iniciales = orden.creador
+    ? `${orden.creador.nombre[0] ?? ""}${orden.creador.apellido[0] ?? ""}`.toUpperCase()
+    : "?";
+
   return (
     <>
-      <AppHeader titulo={`Orden #${orden.id}`} volverA="/" />
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-5 px-4 py-5">
-        {creada && (
-          <p role="status" className="flex items-center gap-2 rounded-xl bg-emerald-500/12 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0" aria-hidden>
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-            Orden creada correctamente.
-          </p>
-        )}
+      <AppHeader
+        titulo={`Orden ${numeroOrden(orden.id)}`}
+        subtitulo={`${orden.escuelas?.nombre ?? ""} · ${orden.ubicacion}`}
+      />
+      <Pagina>
+        <div className="flex w-full max-w-[720px] flex-col gap-4">
+          <Link href="/" className="inline-flex min-h-10 w-max items-center gap-1.5 font-medium text-muted hover:text-foreground">
+            <IconoAtras className="size-[18px]" />
+            Inicio
+          </Link>
 
-        <section className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <PrioridadBadge prioridad={orden.prioridad} />
-            <EstadoBadge estado={orden.estado} />
-          </div>
-          <h2 className="mt-2 text-xl font-semibold leading-snug tracking-tight">
-            {orden.escuelas?.nombre}
-          </h2>
-          {orden.escuelas?.direccion && (
-            <p className="text-sm text-muted">{orden.escuelas.direccion}</p>
+          {creada && (
+            <p role="status" className="flex items-center gap-2.5 rounded-xl bg-primary-soft px-4 py-3 text-sm font-semibold text-primary">
+              <IconoOk className="size-[18px]" />
+              Orden {numeroOrden(orden.id)} creada correctamente.
+            </p>
           )}
-        </section>
 
-        <dl className="grid grid-cols-2 gap-3">
-          <Dato titulo="Fecha" valor={formatFecha(orden.fecha)} />
-          <Dato titulo="Ubicación" valor={orden.ubicacion} />
-        </dl>
-
-        <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Descripción
-          </h3>
-          <p className="mt-1.5 whitespace-pre-wrap">{orden.descripcion}</p>
-        </section>
-
-        {!!urls?.length && (
-          <section className="flex flex-col gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Fotos ({urls.length})
-            </h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {urls.map((u, i) =>
-                u.signedUrl ? (
-                  <a
-                    key={u.path ?? i}
-                    href={u.signedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="aspect-square overflow-hidden rounded-xl bg-surface ring-1 ring-border"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- URL firmada temporal de Storage */}
-                    <img src={u.signedUrl} alt={`Foto ${i + 1}`} className="size-full object-cover" />
-                  </a>
-                ) : null,
+          <article className="tarjeta overflow-hidden">
+            <div className="flex flex-col gap-2.5 border-b border-border p-[18px] pc:p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="num text-[13px] text-muted">{numeroOrden(orden.id)}</span>
+                <EstadoBadge estado={orden.estado} />
+                <PrioridadBadge prioridad={orden.prioridad} />
+              </div>
+              <h2 className="whitespace-pre-wrap text-xl leading-tight font-bold tracking-[-0.01em]">
+                {orden.descripcion}
+              </h2>
+              <p className="flex items-start gap-1.5 text-sm text-muted">
+                <IconoLugar className="mt-0.5 size-4" />
+                <span>
+                  <b className="font-semibold text-foreground">{orden.escuelas?.nombre}</b>
+                  {orden.escuelas?.direccion && ` (${orden.escuelas.direccion})`}, {orden.ubicacion}
+                </span>
+              </p>
+              {orden.creador && (
+                <p className="flex items-center gap-2 text-[13.5px] text-muted">
+                  <span className="avatar size-6 text-[11px]">{iniciales}</span>
+                  Cargada por {nombreCompleto(orden.creador)} · {fechaCorta(orden.fecha).toLowerCase()}
+                </p>
               )}
             </div>
-          </section>
-        )}
 
-        <p className="text-xs text-muted">
-          Creada {orden.creador && `por ${nombreCompleto(orden.creador)} `}el{" "}
-          {formatFechaHora(orden.created_at)}
-        </p>
-      </main>
+            <div className="flex flex-col gap-[18px] p-[18px] pc:p-5">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-[10px] bg-background px-3.5 py-3">
+                  <span className="text-[12.5px] text-muted">Fecha</span>
+                  <b className="block text-lg font-semibold tabular-nums">{formatFecha(orden.fecha)}</b>
+                </div>
+                <div className="rounded-[10px] bg-background px-3.5 py-3">
+                  <span className="text-[12.5px] text-muted">Cargada a las</span>
+                  <b className="block text-lg font-semibold tabular-nums">{formatHora(orden.created_at)}</b>
+                </div>
+              </div>
+
+              {!!urls?.length && (
+                <div>
+                  <p className="dato-titulo">Fotos ({urls.length})</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {urls.map((u, i) =>
+                      u.signedUrl ? (
+                        <a
+                          key={u.path ?? i}
+                          href={u.signedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="aspect-[4/3] overflow-hidden rounded-[10px] bg-[#eef0f3]"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- URL firmada temporal de Storage */}
+                          <img src={u.signedUrl} alt={`Foto ${i + 1}`} className="size-full object-cover" />
+                        </a>
+                      ) : null,
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted">Creada el {formatFechaHora(orden.created_at)}</p>
+            </div>
+          </article>
+        </div>
+      </Pagina>
     </>
-  );
-}
-
-function Dato({ titulo, valor }: { titulo: string; valor: string }) {
-  return (
-    <div className="min-w-0 rounded-2xl bg-surface p-4 ring-1 ring-border">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{titulo}</dt>
-      <dd className="mt-1 break-words font-medium">{valor}</dd>
-    </div>
   );
 }
