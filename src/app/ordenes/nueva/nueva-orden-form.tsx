@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { EscuelaSelect, type EscuelaOpcion } from "@/components/escuela-select";
 import { FotosInput, idUnico, type FotoLocal } from "@/components/fotos-input";
+import { Campo } from "@/components/ui";
 import { comprimirImagen } from "@/lib/comprimir-imagen";
 import {
   MAX_DESCRIPCION,
@@ -60,11 +61,13 @@ export function NuevaOrdenForm({
   if (escuelas.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border p-6 text-center">
-        <p className="font-medium">Todavía no hay escuelas cargadas.</p>
+        <p className="font-medium">
+          {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
+        </p>
         <p className="mt-1 text-sm text-muted">
           {esAdmin
             ? "Cargá al menos una para poder crear órdenes."
-            : "Pedile al administrador que las cargue."}
+            : "Pedile al administrador que te asigne tus escuelas."}
         </p>
         {esAdmin && (
           <Link href="/admin/escuelas" className="btn-primary mt-5">
@@ -273,25 +276,6 @@ function Pasos({ actual }: { actual: 1 | 2 }) {
       <span className={actual === 1 ? "text-primary" : ""}>1. Escuela</span>
       <span className="h-px w-6 bg-border" />
       <span className={actual === 2 ? "text-primary" : ""}>2. Detalle</span>
-    </div>
-  );
-}
-
-function Campo({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <label htmlFor={htmlFor} className="text-sm font-medium">
-        {label}
-      </label>
-      {children}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { getUsuario } from "@/lib/auth";
 import { formatFecha, formatFechaHora } from "@/lib/fechas";
 import type { Estado, Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
+import { nombreCompleto } from "@/lib/usuarios";
 
 export const metadata: Metadata = { title: "Orden · Mantenimiento C7" };
 
@@ -18,6 +19,7 @@ type Orden = {
   ubicacion: string;
   created_at: string;
   escuelas: { nombre: string; direccion: string | null } | null;
+  creador: { nombre: string; apellido: string } | null;
   orden_fotos: { id: number; path: string }[];
 };
 
@@ -32,7 +34,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   const { data: orden } = await supabase
     .from("ordenes_trabajo")
     .select(
-      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, escuelas(nombre, direccion), orden_fotos(id, path)",
+      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, escuelas(nombre, direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido), orden_fotos(id, path)",
     )
     .eq("id", Number(id))
     .maybeSingle<Orden>();
@@ -107,7 +109,10 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
           </section>
         )}
 
-        <p className="text-xs text-muted">Creada el {formatFechaHora(orden.created_at)}</p>
+        <p className="text-xs text-muted">
+          Creada {orden.creador && `por ${nombreCompleto(orden.creador)} `}el{" "}
+          {formatFechaHora(orden.created_at)}
+        </p>
       </main>
     </>
   );

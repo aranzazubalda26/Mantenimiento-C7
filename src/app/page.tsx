@@ -5,6 +5,7 @@ import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import { formatFecha } from "@/lib/fechas";
 import type { Estado, Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
+import { ROL_LABEL } from "@/lib/usuarios";
 import { logout } from "./login/actions";
 
 type OrdenFila = {
@@ -23,7 +24,8 @@ export default async function Home() {
   const supabase = await createClient();
 
   // RLS filtra: el admin recibe todas, el inspector solo las suyas
-  const [{ data: ordenes }, { count: cantEscuelas }] = await Promise.all([
+  // Supervisor/inspector: las de sus escuelas (y las que creo el inspector)
+  const [{ data: ordenes }, { count: cantEscuelas }, { count: cantUsuarios }] = await Promise.all([
     supabase
       .from("ordenes_trabajo")
       .select("id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(nombre)")
@@ -32,6 +34,9 @@ export default async function Home() {
       .returns<OrdenFila[]>(),
     esAdmin
       ? supabase.from("escuelas").select("*", { count: "exact", head: true })
+      : Promise.resolve({ count: null }),
+    esAdmin
+      ? supabase.from("perfiles").select("*", { count: "exact", head: true }).eq("activo", true)
       : Promise.resolve({ count: null }),
   ]);
 
@@ -46,16 +51,20 @@ export default async function Home() {
       </AppHeader>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-5">
-        <p className="truncate text-sm text-muted">
-          {usuario.email}
-          {usuario.rol && (
-            <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs font-medium capitalize text-foreground ring-1 ring-border">
-              {usuario.rol}
-            </span>
-          )}
-        </p>
+        <div>
+          <p className="text-xl font-semibold tracking-tight">
+            Hola{usuario.nombre ? `, ${usuario.nombre}` : ""}
+          </p>
+          <p className="truncate text-sm text-muted">
+            {usuario.rol ? ROL_LABEL[usuario.rol] : usuario.email}
+          </p>
+        </div>
 
-        {puedeCrearOrdenes(usuario) ? (
+        {!usuario.rol ? (
+          <p className="rounded-2xl bg-surface p-5 text-sm text-muted ring-1 ring-border">
+            Tu usuario no está habilitado. Pedile al administrador que lo revise.
+          </p>
+        ) : puedeCrearOrdenes(usuario) ? (
           <Link
             href="/ordenes/nueva"
             className="flex items-center gap-4 rounded-2xl bg-primary p-5 text-primary-fg shadow-sm transition-colors hover:bg-primary-hover active:scale-[0.99]"
@@ -70,33 +79,26 @@ export default async function Home() {
               <span className="block text-sm opacity-85">Reportar una tarea en una escuela</span>
             </span>
           </Link>
-        ) : (
-          <p className="rounded-2xl bg-surface p-5 text-sm text-muted ring-1 ring-border">
-            Tu usuario todavía no tiene un rol asignado. Pedile al administrador
-            que te habilite.
-          </p>
-        )}
+        ) : null}
 
         {esAdmin && (
-          <Link
-            href="/admin/escuelas"
-            className="flex items-center justify-between rounded-2xl bg-surface p-4 ring-1 ring-border transition-colors hover:ring-primary"
-          >
-            <span>
-              <span className="block font-semibold">Escuelas</span>
-              <span className="block text-sm text-muted">
-                {cantEscuelas ?? 0} cargada{cantEscuelas === 1 ? "" : "s"}
-              </span>
-            </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5 text-muted" aria-hidden>
-              <path d="M9 6l6 6-6 6" />
-            </svg>
-          </Link>
+          <div className="grid grid-cols-2 gap-3">
+            <Acceso
+              href="/admin/escuelas"
+              titulo="Escuelas"
+              detalle={`${cantEscuelas ?? 0} cargada${cantEscuelas === 1 ? "" : "s"}`}
+            />
+            <Acceso
+              href="/admin/usuarios"
+              titulo="Usuarios"
+              detalle={`${cantUsuarios ?? 0} activo${cantUsuarios === 1 ? "" : "s"}`}
+            />
+          </div>
         )}
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-            {esAdmin ? "Últimas órdenes" : "Mis órdenes"}
+            {esAdmin ? "Últimas órdenes" : usuario.rol === "supervisor" ? "Órdenes de mis escuelas" : "Mis órdenes"}
           </h2>
 
           {!ordenes?.length ? (
@@ -132,5 +134,22 @@ export default async function Home() {
         </section>
       </main>
     </>
+  );
+}
+
+function Acceso({ href, titulo, detalle }: { href: string; titulo: string; detalle: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between gap-2 rounded-2xl bg-surface p-4 ring-1 ring-border transition-colors hover:ring-primary"
+    >
+      <span className="min-w-0">
+        <span className="block font-semibold">{titulo}</span>
+        <span className="block truncate text-sm text-muted">{detalle}</span>
+      </span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5 shrink-0 text-muted" aria-hidden>
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+    </Link>
   );
 }
