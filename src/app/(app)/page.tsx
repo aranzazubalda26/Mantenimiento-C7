@@ -10,11 +10,11 @@ import {
   IconoTareas,
 } from "@/components/iconos";
 import { ListaOrdenes, type OrdenLista } from "@/components/lista-ordenes";
+import { TarjetaEscuela, type OrdenResumida } from "@/components/tarjeta-escuela";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
-import { ESTADOS, ESTADO_LABEL, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
+import { numeroOrden, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 
-type Resumida = { id: number; escuela_id: number; estado: Estado; prioridad: Prioridad };
 type Urgente = {
   id: number;
   descripcion: string;
@@ -26,19 +26,6 @@ type Urgente = {
 
 const SELECT_LISTA =
   "id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)";
-
-// Contadores por estado en cada escuela (mismos colores que las pastillas de estado)
-const CONTADOR_ESTADO: Record<Estado, string> = {
-  solicitada: "bg-[#fef0c7] text-[#93370d]",
-  en_proceso: "bg-[#dce8fd] text-[#1e40af]",
-  cerrada: "bg-[#eef0f3] text-[#475467]",
-};
-
-const PLURAL_ESTADO: Record<Estado, string> = {
-  solicitada: "Solicitadas",
-  en_proceso: "En proceso",
-  cerrada: "Cerradas",
-};
 
 export default async function Home() {
   const usuario = await getUsuario();
@@ -53,7 +40,10 @@ export default async function Home() {
 
   // RLS filtra las ordenes: el admin todas; supervisor/inspector las de sus escuelas
   const [{ data: todas }, { data: recientes }, { data: urgentes }, { data: escuelas }] = await Promise.all([
-    supabase.from("ordenes_trabajo").select("id, escuela_id, estado, prioridad").returns<Resumida[]>(),
+    supabase
+      .from("ordenes_trabajo")
+      .select("id, escuela_id, estado, prioridad, descripcion, ubicacion, created_at")
+      .returns<OrdenResumida[]>(),
     supabase
       .from("ordenes_trabajo")
       .select(SELECT_LISTA)
@@ -73,7 +63,7 @@ export default async function Home() {
   ]);
 
   const ordenes = todas ?? [];
-  const cuenta = (f: (o: Resumida) => boolean) => ordenes.filter(f).length;
+  const cuenta = (f: (o: OrdenResumida) => boolean) => ordenes.filter(f).length;
   const nUrgentes = cuenta((o) => o.estado === "solicitada" && o.prioridad === "urgente");
   const nSolicitadas = cuenta((o) => o.estado === "solicitada");
   const nEnProceso = cuenta((o) => o.estado === "en_proceso");
@@ -124,45 +114,15 @@ export default async function Home() {
                   {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
                 </p>
               ) : (
-                <ul className="tarjeta divide-y divide-border overflow-hidden">
-                  {escuelas.map((e) => {
-                    const suyas = ordenes.filter((o) => o.escuela_id === e.id);
-                    const n = (est: Estado) => suyas.filter((o) => o.estado === est).length;
-                    const urgente = suyas.some((o) => o.estado === "solicitada" && o.prioridad === "urgente");
-                    return (
-                      <li key={e.id}>
-                        <Link
-                          href={`/escuelas/${e.id}`}
-                          className="flex items-center gap-3 px-4 py-3.5 hover:bg-fila-hover pc:gap-4 pc:px-5"
-                        >
-                          <span className="esc-num h-9 min-w-9 text-sm">{e.id}</span>
-                          <span className="flex min-w-0 flex-1 flex-col gap-1.5 pc:flex-row pc:items-center pc:gap-4">
-                            <span className="min-w-0 pc:flex-1">
-                              <span className="block font-semibold leading-snug">{e.direccion}</span>
-                              {e.nombre && <span className="block truncate text-[13px] text-muted">{e.nombre}</span>}
-                            </span>
-                            <span className="flex flex-wrap items-center gap-1.5">
-                              {urgente && <PrioridadBadge prioridad="urgente" />}
-                              {suyas.length === 0 ? (
-                                <span className="text-[13px] text-muted">Sin órdenes</span>
-                              ) : (
-                                ESTADOS.map((est) =>
-                                  n(est) ? (
-                                    <span key={est} className={`inline-flex h-[22px] items-center gap-1 rounded-full px-2 text-xs font-semibold ${CONTADOR_ESTADO[est]}`}>
-                                      <b className="tabular-nums">{n(est)}</b>
-                                      {(n(est) === 1 ? ESTADO_LABEL[est] : PLURAL_ESTADO[est]).toLowerCase()}
-                                    </span>
-                                  ) : null,
-                                )
-                              )}
-                            </span>
-                          </span>
-                          <IconoFlecha className="size-5 text-muted" />
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="grid items-start gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
+                  {escuelas.map((e) => (
+                    <TarjetaEscuela
+                      key={e.id}
+                      escuela={e}
+                      ordenes={ordenes.filter((o) => o.escuela_id === e.id)}
+                    />
+                  ))}
+                </div>
               )}
             </section>
 
