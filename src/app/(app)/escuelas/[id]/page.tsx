@@ -58,7 +58,7 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
   const { data } = await supabase
     .from("ordenes_trabajo")
     .select(
-      "id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)",
+      "id, fecha, descripcion, prioridad, estado, ubicacion, motivo_reapertura, escuelas(direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)",
     )
     .eq("escuela_id", escuela.id)
     .order("created_at", { ascending: false })

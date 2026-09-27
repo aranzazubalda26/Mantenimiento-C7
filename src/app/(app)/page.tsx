@@ -21,7 +21,7 @@ export default async function Home() {
   const [{ data: todas }, { data: escuelas }] = await Promise.all([
     supabase
       .from("ordenes_trabajo")
-      .select("id, escuela_id, estado, prioridad, descripcion, ubicacion, created_at")
+      .select("id, escuela_id, estado, prioridad, descripcion, ubicacion, created_at, motivo_reapertura")
       .returns<OrdenResumida[]>(),
     qEscuelas,
   ]);

@@ -11,6 +11,9 @@ const ESTADO_CLASES: Record<Estado, string> = {
   cerrada: "bg-[#eef0f3] text-[#475467]",
 };
 
+// Orden reabierta (ver esReabierta): borde amarillo en las listas, para distinguirla del resto
+export const BORDE_REABIERTA = "shadow-[inset_0_0_0_2px_#fdb022]";
+
 const PRIORIDAD_CLASES: Record<Prioridad, string> = {
   baja: "bg-[#eef0f3] text-[#475467]",
   media: "bg-[#eef0f3] text-[#344054]",

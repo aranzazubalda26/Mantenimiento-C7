@@ -49,6 +49,11 @@ export function esPrioridad(v: unknown): v is Prioridad {
   return PRIORIDADES.includes(v as Prioridad);
 }
 
+// Reabierta por el inspector/a y todavia pendiente (al terminarla, la base borra el motivo)
+export function esReabierta(o: { estado: Estado; motivo_reapertura: string | null }) {
+  return o.estado === "solicitada" && !!o.motivo_reapertura;
+}
+
 // Datos de una orden al crearla o editarla (texto ya recortado): el primer error, o null
 export function validarDatosOrden(d: { fecha: string; descripcion: string; prioridad: string; ubicacion: string }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.fecha)) return "La fecha no es válida.";

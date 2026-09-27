@@ -45,7 +45,7 @@ export default async function OrdenesPage(props: PageProps<"/ordenes">) {
   let query = supabase
     .from("ordenes_trabajo")
     .select(
-      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, cerrada_at, escuelas(direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)",
+      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, cerrada_at, motivo_reapertura, escuelas(direccion), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido)",
     );
   if (escuelaId) query = query.eq("escuela_id", escuelaId);
   if (desde) query = query.gte("fecha", desde);

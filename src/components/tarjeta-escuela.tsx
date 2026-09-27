@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { conVolver } from "@/lib/navegacion";
-import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
-import { PrioridadBadge } from "./badges";
+import { esReabierta, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
+import { BORDE_REABIERTA, PrioridadBadge } from "./badges";
 import { IconoFlecha } from "./iconos";
 
 export type OrdenResumida = {
@@ -12,6 +12,7 @@ export type OrdenResumida = {
   descripcion: string;
   ubicacion: string;
   created_at: string;
+  motivo_reapertura: string | null;
 };
 
 const PESO_PRIORIDAD: Record<Prioridad, number> = { urgente: 0, alta: 1, media: 2, baja: 3 };
@@ -86,9 +87,15 @@ export function TarjetaEscuela({
             <ul className="divide-y divide-border">
               {pendientes.slice(0, MUESTRA).map((o) => (
                 <li key={o.id}>
-                  <Link href={conVolver(`/ordenes/${o.id}`, "/")} className="flex items-center gap-2.5 px-[18px] py-2.5 hover:bg-fila-hover">
+                  <Link
+                    href={conVolver(`/ordenes/${o.id}`, "/")}
+                    className={`flex items-center gap-2.5 px-[18px] py-2.5 hover:bg-fila-hover ${esReabierta(o) ? BORDE_REABIERTA : ""}`}
+                  >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{o.descripcion}</span>
+                      <span className="block truncate text-sm font-medium">
+                        {esReabierta(o) && <span className="sr-only">Reabierta: </span>}
+                        {o.descripcion}
+                      </span>
                       <span className="block truncate text-xs text-muted">
                         <span className="num">{numeroOrden(o.id)}</span> · {o.ubicacion}
                       </span>

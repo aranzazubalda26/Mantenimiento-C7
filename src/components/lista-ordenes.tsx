@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { fechaCorta } from "@/lib/fechas";
 import { conVolver } from "@/lib/navegacion";
-import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
+import { esReabierta, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { nombreCompleto } from "@/lib/usuarios";
-import { PrioridadBadge } from "./badges";
+import { BORDE_REABIERTA, PrioridadBadge } from "./badges";
 
 export type OrdenLista = {
   id: number;
@@ -12,6 +12,7 @@ export type OrdenLista = {
   prioridad: Prioridad;
   estado: Estado;
   ubicacion: string;
+  motivo_reapertura: string | null;
   escuelas: { direccion: string } | null;
   creador: { nombre: string; apellido: string } | null;
 };
@@ -23,6 +24,7 @@ function iniciales(p: { nombre: string; apellido: string } | null) {
 // Lista de ordenes. PC: columnas Orden · Escuela · Cargada por · Fecha.
 // Celular: descripcion (con la escuela abajo) y la fecha a la derecha.
 // Sin columna de estado: con solo dos estados, el filtro ya dice cual se esta viendo.
+// Las reabiertas llevan un borde amarillo hasta que se vuelven a terminar.
 //   `sinEscuela`: en la pantalla de una escuela no se repite la escuela en cada fila.
 //   `marcarTerminadas`: en listas que mezclan estados, marca las terminadas con una etiqueta.
 //   `origen`: ruta actual (con filtros); la orden la usa para "Volver a …".
@@ -61,9 +63,15 @@ export function ListaOrdenes({
         <ul>
           {ordenes.map((o) => (
             <li key={o.id} className="border-b border-border last:border-b-0">
-              <Link href={conVolver(`/ordenes/${o.id}`, origen)} className={`${columnas} min-h-[72px] hover:bg-fila-hover`}>
+              <Link
+                href={conVolver(`/ordenes/${o.id}`, origen)}
+                className={`${columnas} min-h-[72px] hover:bg-fila-hover ${esReabierta(o) ? BORDE_REABIERTA : ""}`}
+              >
                 <div className="flex min-w-0 flex-col gap-[3px] py-3">
-                  <span className="line-clamp-2 font-semibold pc:line-clamp-1">{o.descripcion}</span>
+                  <span className="line-clamp-2 font-semibold pc:line-clamp-1">
+                    {esReabierta(o) && <span className="sr-only">Reabierta: </span>}
+                    {o.descripcion}
+                  </span>
                   <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
                     <span className="num">{numeroOrden(o.id)}</span>
                     <span>·</span>
