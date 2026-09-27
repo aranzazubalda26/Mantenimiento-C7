@@ -6,7 +6,7 @@ import { IconoAlerta, IconoLugar, IconoOk } from "@/components/iconos";
 import { Volver } from "@/components/volver";
 import { conVolver, volverSeguro } from "@/lib/navegacion";
 import { getUsuario } from "@/lib/auth";
-import { duracion, fechaCorta, formatFecha, formatFechaDe, formatFechaHora, formatHora } from "@/lib/fechas";
+import { duracion, formatFecha, formatFechaDe, formatFechaHora, formatHora } from "@/lib/fechas";
 import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 import { nombreCompleto } from "@/lib/usuarios";
@@ -26,7 +26,6 @@ type Orden = {
   cerrada_at: string | null;
   motivo_reapertura: string | null;
   escuelas: { id: number; direccion: string; nombre: string | null; supervisor_id: string; inspector_id: string } | null;
-  creador: { nombre: string; apellido: string } | null;
   cerrador: { nombre: string; apellido: string } | null;
   orden_fotos: { id: number; path: string }[];
 };
@@ -42,7 +41,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   const { data: orden } = await supabase
     .from("ordenes_trabajo")
     .select(
-      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, cerrada_at, motivo_reapertura, escuelas(id, nombre, direccion, supervisor_id, inspector_id), creador:perfiles!ordenes_trabajo_creado_por_fkey(nombre, apellido), cerrador:perfiles!ordenes_trabajo_cerrada_por_fkey(nombre, apellido), orden_fotos(id, path)",
+      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, cerrada_at, motivo_reapertura, escuelas(id, nombre, direccion, supervisor_id, inspector_id), cerrador:perfiles!ordenes_trabajo_cerrada_por_fkey(nombre, apellido), orden_fotos(id, path)",
     )
     .eq("id", Number(id))
     .maybeSingle<Orden>();
@@ -75,10 +74,6 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   const volverA = destinoVolver(origen, orden.escuelas);
   const detalleHref = origen ? conVolver(`/ordenes/${orden.id}`, origen) : `/ordenes/${orden.id}`;
   const reapertura = pendiente && orden.motivo_reapertura ? eventos?.findLast((e) => e.tipo === "reabierta") : undefined;
-
-  const iniciales = orden.creador
-    ? `${orden.creador.nombre[0] ?? ""}${orden.creador.apellido[0] ?? ""}`.toUpperCase()
-    : "?";
 
   return (
     <>
@@ -137,12 +132,6 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
                   {orden.escuelas?.nombre && ` (${orden.escuelas.nombre})`}, {orden.ubicacion}
                 </span>
               </p>
-              {orden.creador && (
-                <p className="flex items-center gap-2 text-[13.5px] text-muted">
-                  <span className="avatar size-6 text-[11px]">{iniciales}</span>
-                  Cargada por {nombreCompleto(orden.creador)} · {fechaCorta(orden.fecha).toLowerCase()}
-                </p>
-              )}
             </div>
 
             <div className="flex flex-col gap-[18px] p-[18px] pc:p-5">
