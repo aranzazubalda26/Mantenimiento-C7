@@ -1,22 +1,19 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import {
-  login,
-  loginRapido as loginRapidoAction,
-  type LoginState,
-} from "./actions";
+import { ROL_LABEL, type Rol } from "@/lib/usuarios";
+import { entrarComo, login, type LoginState } from "./actions";
+
+export type UsuarioDev = { id: string; nombre: string; apellido: string; rol: Rol };
 
 const initialState: LoginState = { error: null, email: "" };
 
-export function LoginForm({ loginRapido }: { loginRapido: boolean }) {
+// usuariosDev: solo llega con datos en desarrollo (botones "entrar como")
+export function LoginForm({ usuariosDev }: { usuariosDev: UsuarioDev[] }) {
   const [state, formAction, pending] = useActionState(login, initialState);
-  const [rapidoState, rapidoAction, rapidoPending] = useActionState(
-    loginRapidoAction,
-    initialState,
-  );
+  const [devState, devAction, devPending] = useActionState(entrarComo, initialState);
   const [verPassword, setVerPassword] = useState(false);
-  const ocupado = pending || rapidoPending;
+  const ocupado = pending || devPending;
 
   return (
     <div className="flex flex-col gap-5">
@@ -73,18 +70,30 @@ export function LoginForm({ loginRapido }: { loginRapido: boolean }) {
         </button>
       </form>
 
-      {loginRapido && (
-        <form action={rapidoAction} className="flex flex-col gap-3">
+      {usuariosDev.length > 0 && (
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 text-xs text-muted">
             <span className="h-px flex-1 bg-border" />
-            solo en desarrollo
+            solo en desarrollo · entrar como
             <span className="h-px flex-1 bg-border" />
           </div>
-          {rapidoState.error && <Error mensaje={rapidoState.error} />}
-          <button type="submit" disabled={ocupado} className="btn-dev">
-            {rapidoPending ? "Ingresando…" : "⚡ Inicio rápido"}
-          </button>
-        </form>
+          {devState.error && <Error mensaje={devState.error} />}
+          <form action={devAction} className="flex flex-col gap-2">
+            {usuariosDev.map((u) => (
+              <button
+                key={u.id}
+                type="submit"
+                name="usuario"
+                value={u.id}
+                disabled={ocupado}
+                className="btn-dev min-h-11 justify-between px-4 text-[15px]"
+              >
+                <span>⚡ {u.nombre} {u.apellido}</span>
+                <span className="text-xs font-semibold opacity-80">{ROL_LABEL[u.rol]}</span>
+              </button>
+            ))}
+          </form>
+        </div>
       )}
     </div>
   );

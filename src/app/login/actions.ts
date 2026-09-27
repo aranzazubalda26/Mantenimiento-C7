@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = { error: string | null; email: string };
@@ -46,22 +47,28 @@ export async function login(
   redirect("/");
 }
 
-// Inicio rapido para desarrollo: usa DEV_LOGIN_EMAIL/DEV_LOGIN_PASSWORD de .env.local.
+// Inicio rapido para desarrollo: entra como cualquier usuario activo SIN contraseña.
+// Genera el acceso con la API de administrador de Supabase (no manda mails).
 // En produccion no hace nada aunque se llame directamente.
-export async function loginRapido(): Promise<LoginState> {
-  const email = process.env.DEV_LOGIN_EMAIL;
-  const password = process.env.DEV_LOGIN_PASSWORD;
-
-  if (process.env.NODE_ENV !== "development" || !email || !password) {
+export async function entrarComo(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  if (process.env.NODE_ENV !== "development") {
     return { error: "El inicio rápido no está disponible.", email: "" };
+  }
+  const id = String(formData.get("usuario") ?? "");
+
+  const admin = createAdminClient();
+  const { data: perfil } = await admin.from("perfiles").select("email, activo").eq("id", id).maybeSingle();
+  if (!perfil?.activo) return { error: "Ese usuario no existe o está desactivado.", email: "" };
+
+  const { data: link, error: errLink } = await admin.auth.admin.generateLink({ type: "magiclink", email: perfil.email });
+  if (errLink) {
+    console.error("entrarComo:", errLink);
+    return { error: "No se pudo generar el acceso.", email: "" };
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    return { error: mensajeDeError(error.code, error.message), email: "" };
-  }
+  const { error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
+  if (error) return { error: mensajeDeError(error.code, error.message), email: "" };
 
   revalidatePath("/", "layout");
   redirect("/");
