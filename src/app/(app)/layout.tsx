@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .neq("estado", "cerrada");
 
   return (
-    <Shell usuario={{ nombre, apellido, email, rol }} abiertas={count ?? 0}>
+    <Shell usuario={{ nombre, apellido, email, rol }} pendientes={count ?? 0}>
       {children}
     </Shell>
   );

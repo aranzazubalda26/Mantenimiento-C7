@@ -2,227 +2,188 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { logout } from "@/app/login/actions";
 import { ROL_LABEL, type Rol } from "@/lib/usuarios";
-import {
-  IconoEscuela,
-  IconoGente,
-  IconoInicio,
-  IconoTareas,
-  IconoLlave,
-  IconoMas,
-  IconoMenu,
-  IconoSalir,
-  IconoX,
-} from "./iconos";
+import { IconoEscuela, IconoGente, IconoInicio, IconoMas, IconoSalir, IconoTareas } from "./iconos";
 
 type UsuarioShell = { nombre: string; apellido: string; email: string; rol: Rol | null };
 
-type Item = {
-  href: string;
-  label: string;
-  icono: React.ReactNode;
-  roles: Rol[];
-  contador?: "abiertas";
-  activa: (pathname: string) => boolean; // en que pantallas queda marcada
-};
-type Seccion = { titulo: string; items: Item[] };
+const ShellContext = createContext<{ usuario: UsuarioShell } | null>(null);
 
-// Menu segun rol. Para sumar una pantalla nueva, agregarla aca.
-const SECCIONES: Seccion[] = [
-  {
-    titulo: "Órdenes",
-    items: [
-      { href: "/", label: "Inicio", icono: <IconoInicio />, roles: ["admin", "supervisor", "inspector"], activa: (p) => p === "/" || p.startsWith("/escuelas/") },
-      { href: "/ordenes", label: "Órdenes", icono: <IconoTareas />, roles: ["admin", "supervisor", "inspector"], contador: "abiertas", activa: (p) => p === "/ordenes" || /^\/ordenes\/\d+/.test(p) },
-      { href: "/ordenes/nueva", label: "Nueva orden", icono: <IconoMas />, roles: ["admin", "inspector"], activa: (p) => p === "/ordenes/nueva" },
-    ],
-  },
-  {
-    titulo: "Administración",
-    items: [
-      { href: "/admin/escuelas", label: "Escuelas", icono: <IconoEscuela />, roles: ["admin"], activa: (p) => p.startsWith("/admin/escuelas") },
-      { href: "/admin/usuarios", label: "Usuarios", icono: <IconoGente />, roles: ["admin"], activa: (p) => p.startsWith("/admin/usuarios") },
-    ],
-  },
-];
+// Pantallas donde se esconde la barra de abajo (formularios con sus propios botones)
+const SIN_BARRA = ["/ordenes/nueva"];
 
-const MenuContext = createContext<{ abrir: () => void }>({ abrir: () => {} });
-
-// Estructura de las pantallas con sesion: barra lateral fija en PC,
-// panel deslizable en el celular (se abre con el boton del encabezado).
+// Estructura de las pantallas con sesion: contenido + barra de navegacion abajo
+// (estilo apps de celular). Escuelas, Usuarios y Salir estan en el menu del avatar.
 export function Shell({
   usuario,
-  abiertas,
+  pendientes,
   children,
 }: {
   usuario: UsuarioShell;
-  abiertas: number; // ordenes sin finalizar que ve el usuario
+  pendientes: number;
   children: React.ReactNode;
 }) {
-  const [abierto, setAbierto] = useState(false);
-
-  useEffect(() => {
-    if (!abierto) return;
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAbierto(false);
-    document.addEventListener("keydown", esc);
-    // Que no se desplace la pagina de atras mientras el menu esta abierto
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", esc);
-      document.body.style.overflow = "";
-    };
-  }, [abierto]);
-
-  return (
-    <MenuContext.Provider value={{ abrir: () => setAbierto(true) }}>
-      <div className="min-h-dvh pc:grid pc:grid-cols-[264px_minmax(0,1fr)]">
-        {/* PC */}
-        <aside className="sticky top-0 hidden h-dvh overflow-y-auto border-r border-border bg-surface pc:block">
-          <Lateral usuario={usuario} abiertas={abiertas} />
-        </aside>
-
-        {/* Celular */}
-        <div
-          onClick={() => setAbierto(false)}
-          aria-hidden
-          className={`fixed inset-0 z-40 bg-[rgba(16,24,40,0.4)] transition-opacity pc:hidden ${
-            abierto ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-        />
-        <aside
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menú"
-          inert={!abierto}
-          className={`fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] overflow-y-auto bg-surface shadow-alta transition-transform duration-250 ease-out pc:hidden ${
-            abierto ? "translate-x-0" : "-translate-x-[105%]"
-          }`}
-        >
-          <Lateral usuario={usuario} abiertas={abiertas} onCerrar={() => setAbierto(false)} />
-        </aside>
-
-        <div className="flex min-w-0 flex-col">{children}</div>
-      </div>
-    </MenuContext.Provider>
-  );
-}
-
-// Boton ☰ del encabezado (solo en celular)
-export function BotonMenu() {
-  const { abrir } = useContext(MenuContext);
-  return (
-    <button
-      type="button"
-      onClick={abrir}
-      aria-label="Abrir menú"
-      className="grid size-11 shrink-0 place-items-center rounded-[10px] border border-border bg-surface pc:hidden"
-    >
-      <IconoMenu />
-    </button>
-  );
-}
-
-function Lateral({
-  usuario,
-  abiertas,
-  onCerrar,
-}: {
-  usuario: UsuarioShell;
-  abiertas: number;
-  onCerrar?: () => void;
-}) {
   const pathname = usePathname();
-  const rol = usuario.rol;
-  const iniciales = `${usuario.nombre[0] ?? ""}${usuario.apellido[0] ?? ""}`.toUpperCase() || "?";
+  const conBarra = !SIN_BARRA.includes(pathname);
 
-  const secciones = SECCIONES.map((s) => ({
-    ...s,
-    items: s.items.filter((i) => rol && i.roles.includes(rol)),
-  })).filter((s) => s.items.length > 0);
+  return (
+    <ShellContext.Provider value={{ usuario }}>
+      <div className="flex min-h-dvh flex-col">{children}</div>
+      {conBarra && <BarraInferior rol={usuario.rol} pendientes={pendientes} pathname={pathname} />}
+    </ShellContext.Provider>
+  );
+}
+
+function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendientes: number; pathname: string }) {
+  if (!rol) return null;
+  const puedeCrear = rol === "admin" || rol === "inspector";
+  const enInicio = pathname === "/" || pathname.startsWith("/escuelas/");
+  const enOrdenes = pathname === "/ordenes" || /^\/ordenes\/\d+/.test(pathname);
 
   return (
     <nav
-      aria-label="Menú principal"
-      className="flex min-h-full flex-col gap-6 px-3.5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-[calc(20px+env(safe-area-inset-top))] pc:pt-5"
+      aria-label="Navegación principal"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
     >
-      <div className="flex items-center gap-2.5 px-2 text-[17px] font-bold tracking-[-0.01em]">
-        <span className="grid size-8 place-items-center rounded-[9px] bg-primary text-white">
-          <IconoLlave className="size-[18px]" />
-        </span>
-        Mantenimiento C7
-        {onCerrar && (
-          <button
-            type="button"
-            onClick={onCerrar}
-            aria-label="Cerrar menú"
-            className="ml-auto grid size-10 place-items-center rounded-[10px] text-muted"
+      <div className={`mx-auto grid h-16 max-w-md items-center ${puedeCrear ? "grid-cols-3" : "grid-cols-2"}`}>
+        <Tab href="/" texto="Inicio" activo={enInicio} icono={<IconoInicio className="size-6" />} />
+
+        {puedeCrear && (
+          <Link
+            href="/ordenes/nueva"
+            aria-label="Nueva orden"
+            className="mx-auto -mt-7 flex flex-col items-center gap-1 text-[11.5px] font-semibold text-primary"
           >
-            <IconoX />
-          </button>
+            <span className="grid size-14 place-items-center rounded-full bg-primary text-white shadow-alta ring-4 ring-surface transition-transform active:scale-95">
+              <IconoMas className="size-7" />
+            </span>
+            Nueva orden
+          </Link>
         )}
-      </div>
 
-      {secciones.map((s) => (
-        <div key={s.titulo}>
-          <p className="px-2.5 pb-1.5 text-xs font-semibold text-muted">{s.titulo}</p>
-          <ul className="flex flex-col gap-0.5">
-            {s.items.map((item) => {
-              const activo = item.activa(pathname);
-              const contador = item.contador === "abiertas" ? abiertas : 0;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onCerrar}
-                    aria-current={activo ? "page" : undefined}
-                    className={`flex min-h-[42px] items-center gap-3 rounded-lg px-2.5 font-medium transition-colors ${
-                      activo
-                        ? "bg-primary-soft font-semibold text-primary"
-                        : "text-muted hover:bg-background hover:text-foreground"
-                    }`}
-                  >
-                    {item.icono}
-                    {item.label}
-                    {contador > 0 && (
-                      <span
-                        title="Órdenes sin terminar"
-                        className={`ml-auto grid h-[22px] min-w-[22px] place-items-center rounded-full px-[7px] text-xs font-semibold ${
-                          activo ? "bg-white text-primary" : "bg-background text-muted"
-                        }`}
-                      >
-                        {contador}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-
-      <div className="mt-auto flex flex-col gap-2.5">
-        <div className="flex items-center gap-3 rounded-xl border border-border p-2.5">
-          <span className="avatar">{iniciales}</span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">
-              {usuario.nombre ? `${usuario.nombre} ${usuario.apellido}` : usuario.email}
-            </p>
-            <p className="truncate text-[13px] text-muted">{rol ? ROL_LABEL[rol] : "Sin acceso"}</p>
-          </div>
-        </div>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border-strong text-[13px] font-medium text-muted hover:border-muted hover:text-foreground"
-          >
-            <IconoSalir className="size-4" />
-            Salir
-          </button>
-        </form>
+        <Tab
+          href="/ordenes"
+          texto="Órdenes"
+          activo={enOrdenes}
+          icono={<IconoTareas className="size-6" />}
+          contador={pendientes}
+        />
       </div>
     </nav>
+  );
+}
+
+function Tab({
+  href,
+  texto,
+  activo,
+  icono,
+  contador,
+}: {
+  href: string;
+  texto: string;
+  activo: boolean;
+  icono: React.ReactNode;
+  contador?: number;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={activo ? "page" : undefined}
+      className={`flex h-full flex-col items-center justify-center gap-1 text-[11.5px] font-semibold transition-colors ${
+        activo ? "text-primary" : "text-muted"
+      }`}
+    >
+      <span className="relative">
+        {icono}
+        {!!contador && (
+          <span className="absolute -right-3 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-danger px-1 text-[10.5px] font-bold text-white tabular-nums">
+            {contador > 99 ? "99+" : contador}
+          </span>
+        )}
+      </span>
+      {texto}
+    </Link>
+  );
+}
+
+// Avatar del encabezado: abre el menu con el usuario, la administracion y Salir
+export function MenuUsuario() {
+  const ctx = useContext(ShellContext);
+  const [abierto, setAbierto] = useState(false);
+  const caja = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!abierto) return;
+    const fuera = (e: PointerEvent) => !caja.current?.contains(e.target as Node) && setAbierto(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAbierto(false);
+    document.addEventListener("pointerdown", fuera);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", fuera);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [abierto]);
+
+  if (!ctx) return null;
+  const { usuario } = ctx;
+  const iniciales = `${usuario.nombre[0] ?? ""}${usuario.apellido[0] ?? ""}`.toUpperCase() || "?";
+
+  return (
+    <div ref={caja} className="relative">
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        aria-label="Mi cuenta"
+        aria-expanded={abierto}
+        className="avatar size-10 ring-2 ring-surface transition-shadow hover:ring-primary/30"
+      >
+        {iniciales}
+      </button>
+
+      {abierto && (
+        <div className="tarjeta absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden shadow-alta">
+          <div className="border-b border-border px-4 py-3">
+            <p className="truncate font-semibold">
+              {usuario.nombre ? `${usuario.nombre} ${usuario.apellido}` : usuario.email}
+            </p>
+            <p className="truncate text-[13px] text-muted">{usuario.rol ? ROL_LABEL[usuario.rol] : "Sin acceso"}</p>
+          </div>
+          {usuario.rol === "admin" && (
+            <div className="border-b border-border py-1">
+              <ItemMenu href="/admin/escuelas" icono={<IconoEscuela />} texto="Escuelas" onClick={() => setAbierto(false)} />
+              <ItemMenu href="/admin/usuarios" icono={<IconoGente />} texto="Usuarios" onClick={() => setAbierto(false)} />
+            </div>
+          )}
+          <form action={logout} className="py-1">
+            <button type="submit" className="flex min-h-11 w-full items-center gap-3 px-4 font-medium text-danger hover:bg-fila-hover">
+              <IconoSalir />
+              Salir
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ItemMenu({
+  href,
+  icono,
+  texto,
+  onClick,
+}: {
+  href: string;
+  icono: React.ReactNode;
+  texto: string;
+  onClick: () => void;
+}) {
+  return (
+    <Link href={href} onClick={onClick} className="flex min-h-11 items-center gap-3 px-4 font-medium hover:bg-fila-hover">
+      <span className="text-muted">{icono}</span>
+      {texto}
+    </Link>
   );
 }
