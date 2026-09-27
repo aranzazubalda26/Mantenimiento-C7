@@ -12,7 +12,7 @@ type UsuarioShell = { nombre: string; apellido: string; email: string; rol: Rol 
 const ShellContext = createContext<{ usuario: UsuarioShell } | null>(null);
 
 // Pantallas donde se esconde la barra de abajo (formularios con sus propios botones)
-const SIN_BARRA = ["/ordenes/nueva"];
+const SIN_BARRA = [/^\/ordenes\/nueva$/, /^\/ordenes\/\d+\/editar$/];
 
 // Estructura de las pantallas con sesion.
 // Celular: barra de navegacion abajo (estilo app) + menu en el avatar del encabezado.
@@ -27,7 +27,7 @@ export function Shell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const conBarra = !SIN_BARRA.includes(pathname);
+  const conBarra = !SIN_BARRA.some((r) => r.test(pathname));
 
   return (
     <ShellContext.Provider value={{ usuario }}>

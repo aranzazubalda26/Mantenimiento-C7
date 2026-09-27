@@ -17,6 +17,7 @@ import {
   type Prioridad,
 } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/client";
+import { editarOrden } from "../[id]/actions";
 import { crearOrden } from "./actions";
 
 const BUCKET = "ordenes-fotos";
@@ -27,34 +28,58 @@ const EXTENSION: Record<string, string> = {
   "image/webp": "webp",
 };
 
+// Datos de una orden existente: el mismo formulario sirve para editarla
+export type Edicion = {
+  id: number;
+  fecha: string;
+  descripcion: string;
+  prioridad: Prioridad;
+  ubicacion: string;
+  fotos: { id: number; url: string | null }[]; // fotos que ya tiene
+  volverHref: string; // detalle de la orden (con su ?volver)
+};
+
 export function NuevaOrdenForm({
   escuelas,
   usuarioId,
   hoy,
   esAdmin,
   escuelaInicial,
+  edicion,
 }: {
   escuelas: EscuelaOpcion[];
   usuarioId: string;
   hoy: string;
   esAdmin: boolean;
   escuelaInicial: number | null;
+  edicion?: Edicion;
 }) {
   const router = useRouter();
   const [paso, setPaso] = useState<1 | 2>(escuelaInicial ? 2 : 1);
   const [escuelaId, setEscuelaId] = useState<number | null>(escuelaInicial);
-  const [fecha, setFecha] = useState(hoy);
-  const [prioridad, setPrioridad] = useState<Prioridad | null>(null);
-  const [ubicacion, setUbicacion] = useState("");
-  const [descripcion, setDescripcion] = useState("");
+  const [fecha, setFecha] = useState(edicion?.fecha ?? hoy);
+  const [prioridad, setPrioridad] = useState<Prioridad | null>(edicion?.prioridad ?? null);
+  const [ubicacion, setUbicacion] = useState(edicion?.ubicacion ?? "");
+  const [descripcion, setDescripcion] = useState(edicion?.descripcion ?? "");
   const [fotos, setFotos] = useState<FotoLocal[]>([]);
+  const [quitar, setQuitar] = useState<number[]>([]); // edicion: fotos existentes a quitar
   const [error, setError] = useState<string | null>(null);
   const [progreso, setProgreso] = useState<string | null>(null);
 
   const escuela = escuelas.find((e) => e.id === escuelaId) ?? null;
   const enviando = progreso !== null;
-  // Cancelar vuelve al padre: la escuela si se entro desde una escuela; si no, el inicio
-  const alCancelar = escuelaInicial ? `/escuelas/${escuelaInicial}` : "/";
+  const fotosQueQuedan = (edicion?.fotos.length ?? 0) - quitar.length;
+  // Editando sin tocar nada: no hay nada que guardar
+  const sinCambios =
+    !!edicion &&
+    fecha === edicion.fecha &&
+    descripcion.trim() === edicion.descripcion &&
+    ubicacion.trim() === edicion.ubicacion &&
+    prioridad === edicion.prioridad &&
+    !fotos.length &&
+    !quitar.length;
+  // Cancelar vuelve al padre: la orden si se esta editando; la escuela si se entro desde una escuela; si no, el inicio
+  const alCancelar = edicion ? edicion.volverHref : escuelaInicial ? `/escuelas/${escuelaInicial}` : "/";
 
   if (escuelas.length === 0) {
     return (
@@ -129,7 +154,22 @@ export function NuevaOrdenForm({
         subidas.push(path);
       }
 
-      setProgreso("Guardando orden…");
+      setProgreso(edicion ? "Guardando cambios…" : "Guardando orden…");
+      if (edicion) {
+        const r = await editarOrden({
+          id: edicion.id,
+          fecha,
+          descripcion,
+          prioridad: prioridad!,
+          ubicacion,
+          fotosNuevas: subidas,
+          fotosQuitar: quitar,
+        });
+        if (r.error) throw new Error(r.error);
+        const href = edicion.volverHref;
+        router.push(`${href}${href.includes("?") ? "&" : "?"}editada=1`);
+        return;
+      }
       const r = await crearOrden({
         escuelaId: escuela.id,
         fecha,
@@ -152,7 +192,7 @@ export function NuevaOrdenForm({
   return (
     // Cualquier cambio en el formulario borra el error anterior
     <form onSubmit={enviar} onChange={() => setError(null)} className="flex flex-col gap-4" noValidate>
-      <Pasos actual={2} />
+      {!edicion && <Pasos actual={2} />}
 
       <Bloque>
         <div className="flex items-center gap-3 rounded-[10px] bg-background p-3">
@@ -161,14 +201,17 @@ export function NuevaOrdenForm({
             <p className="truncate font-semibold">{escuela.direccion}</p>
             {escuela.nombre && <p className="truncate text-[13px] text-muted">{escuela.nombre}</p>}
           </div>
-          <button
-            type="button"
-            disabled={enviando}
-            onClick={() => setPaso(1)}
-            className="shrink-0 text-[13px] font-semibold text-primary"
-          >
-            Cambiar
-          </button>
+          {/* Al editar, la escuela no se cambia */}
+          {!edicion && (
+            <button
+              type="button"
+              disabled={enviando}
+              onClick={() => setPaso(1)}
+              className="shrink-0 text-[13px] font-semibold text-primary"
+            >
+              Cambiar
+            </button>
+          )}
         </div>
 
         <Campo label="Qué hay que hacer" htmlFor="descripcion">
@@ -244,16 +287,45 @@ export function NuevaOrdenForm({
           <div className="flex items-baseline justify-between">
             <span className="text-sm font-semibold">Fotos</span>
             <span className="text-xs text-muted">
-              {fotos.length}/{MAX_FOTOS} · opcional
+              {fotosQueQuedan + fotos.length}/{MAX_FOTOS} · opcional
             </span>
           </div>
+          {!!edicion?.fotos.length && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {edicion.fotos.map((f, i) => {
+                const quitada = quitar.includes(f.id);
+                return (
+                  <div key={f.id} className="relative aspect-[4/3] overflow-hidden rounded-[10px] bg-[#eef0f3]">
+                    {f.url && (
+                      // eslint-disable-next-line @next/next/no-img-element -- URL firmada temporal de Storage
+                      <img src={f.url} alt={`Foto ${i + 1}`} className={`size-full object-cover ${quitada ? "opacity-30" : ""}`} />
+                    )}
+                    <button
+                      type="button"
+                      // Sin lugar para recuperarla si ya se sumaron fotos nuevas hasta el maximo
+                      disabled={enviando || (quitada && fotosQueQuedan + fotos.length >= MAX_FOTOS)}
+                      onClick={() => {
+                        setQuitar((q) => (quitada ? q.filter((x) => x !== f.id) : [...q, f.id]));
+                        setError(null);
+                      }}
+                      className={`absolute inset-x-1.5 bottom-1.5 min-h-9 rounded-lg text-[13px] font-semibold ${
+                        quitada ? "bg-surface text-foreground shadow-suave" : "bg-black/60 text-white"
+                      }`}
+                    >
+                      {quitada ? "Deshacer" : "Quitar"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <FotosInput
             fotos={fotos}
             onChange={(f) => {
               setFotos(f);
               setError(null);
             }}
-            max={MAX_FOTOS}
+            max={MAX_FOTOS - fotosQueQuedan}
             disabled={enviando}
           />
         </div>
@@ -265,8 +337,8 @@ export function NuevaOrdenForm({
         <Link href={alCancelar} className="btn-secondary" aria-disabled={enviando}>
           Cancelar
         </Link>
-        <button type="submit" disabled={enviando} className="btn-primary">
-          {progreso ?? "Crear orden"}
+        <button type="submit" disabled={enviando || sinCambios} className="btn-primary">
+          {progreso ?? (edicion ? "Guardar cambios" : "Crear orden")}
         </button>
       </PieForm>
     </form>

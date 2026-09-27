@@ -136,6 +136,13 @@ export const IconoSalir = (p: Props) => (
   </Svg>
 );
 
+export const IconoLapiz = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" />
+    <path d="M13.5 8.5l2 2" />
+  </Svg>
+);
+
 export const IconoFlecha = (p: Props) => (
   <Svg {...p}>
     <path d="M9 6l6 6-6 6" strokeWidth="2" />

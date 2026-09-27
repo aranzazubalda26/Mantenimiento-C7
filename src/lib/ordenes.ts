@@ -48,3 +48,14 @@ export function numeroOrden(n: number) {
 export function esPrioridad(v: unknown): v is Prioridad {
   return PRIORIDADES.includes(v as Prioridad);
 }
+
+// Datos de una orden al crearla o editarla (texto ya recortado): el primer error, o null
+export function validarDatosOrden(d: { fecha: string; descripcion: string; prioridad: string; ubicacion: string }) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.fecha)) return "La fecha no es válida.";
+  if (!esPrioridad(d.prioridad)) return "Elegí una prioridad.";
+  if (!d.ubicacion) return "Indicá la ubicación dentro del edificio.";
+  if (d.ubicacion.length > MAX_UBICACION) return "La ubicación es demasiado larga.";
+  if (!d.descripcion) return "Describí la tarea.";
+  if (d.descripcion.length > MAX_DESCRIPCION) return "La descripción es demasiado larga.";
+  return null;
+}

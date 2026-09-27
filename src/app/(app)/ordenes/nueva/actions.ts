@@ -2,12 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
-import {
-  MAX_DESCRIPCION,
-  MAX_FOTOS,
-  MAX_UBICACION,
-  esPrioridad,
-} from "@/lib/ordenes";
+import { MAX_FOTOS, validarDatosOrden } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 
 export type NuevaOrdenInput = {
@@ -32,12 +27,8 @@ export async function crearOrden(input: NuevaOrdenInput): Promise<Resultado> {
   const fotos = Array.isArray(input.fotos) ? input.fotos.map(String) : [];
 
   if (!Number.isInteger(input.escuelaId)) return { ok: false, error: "Elegí una escuela." };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.fecha)) return { ok: false, error: "La fecha no es válida." };
-  if (!esPrioridad(input.prioridad)) return { ok: false, error: "Elegí una prioridad." };
-  if (!ubicacion) return { ok: false, error: "Indicá la ubicación dentro del edificio." };
-  if (ubicacion.length > MAX_UBICACION) return { ok: false, error: "La ubicación es demasiado larga." };
-  if (!descripcion) return { ok: false, error: "Describí la tarea." };
-  if (descripcion.length > MAX_DESCRIPCION) return { ok: false, error: "La descripción es demasiado larga." };
+  const invalido = validarDatosOrden({ fecha: input.fecha, descripcion, prioridad: input.prioridad, ubicacion });
+  if (invalido) return { ok: false, error: invalido };
   if (fotos.length > MAX_FOTOS) return { ok: false, error: `Máximo ${MAX_FOTOS} fotos.` };
   if (fotos.some((p) => !p.startsWith(`${usuario.id}/`))) {
     return { ok: false, error: "Fotos inválidas." };
