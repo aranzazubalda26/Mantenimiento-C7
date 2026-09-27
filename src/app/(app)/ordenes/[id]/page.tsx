@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppHeader, Pagina } from "@/components/app-header";
-import { EstadoBadge, PrioridadBadge } from "@/components/badges";
-import { IconoAlerta, IconoLugar, IconoOk } from "@/components/iconos";
+import { EstadoBadge, PrioridadBadge, TARJETA_REABIERTA } from "@/components/badges";
+import { IconoCalendario, IconoLugar, IconoOk } from "@/components/iconos";
 import { Volver } from "@/components/volver";
 import { conVolver, volverSeguro } from "@/lib/navegacion";
 import { getUsuario } from "@/lib/auth";
-import { duracion, formatFecha, formatFechaDe, formatFechaHora, formatHora } from "@/lib/fechas";
-import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
+import { formatFecha } from "@/lib/fechas";
+import { esReabierta, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
-import { nombreCompleto } from "@/lib/usuarios";
 import { AccionesOrden } from "./acciones-orden";
 import { Historial, type Evento } from "./historial";
 
@@ -23,10 +22,8 @@ type Orden = {
   estado: Estado;
   ubicacion: string;
   created_at: string;
-  cerrada_at: string | null;
   motivo_reapertura: string | null;
   escuelas: { id: number; direccion: string; nombre: string | null; supervisor_id: string; inspector_id: string } | null;
-  cerrador: { nombre: string; apellido: string } | null;
   orden_fotos: { id: number; path: string }[];
 };
 
@@ -41,7 +38,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   const { data: orden } = await supabase
     .from("ordenes_trabajo")
     .select(
-      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, cerrada_at, motivo_reapertura, escuelas(id, nombre, direccion, supervisor_id, inspector_id), cerrador:perfiles!ordenes_trabajo_cerrada_por_fkey(nombre, apellido), orden_fotos(id, path)",
+      "id, fecha, descripcion, prioridad, estado, ubicacion, created_at, motivo_reapertura, escuelas(id, nombre, direccion, supervisor_id, inspector_id), orden_fotos(id, path)",
     )
     .eq("id", Number(id))
     .maybeSingle<Orden>();
@@ -73,7 +70,6 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   const origen = volverSeguro(volver);
   const volverA = destinoVolver(origen, orden.escuelas);
   const detalleHref = origen ? conVolver(`/ordenes/${orden.id}`, origen) : `/ordenes/${orden.id}`;
-  const reapertura = pendiente && orden.motivo_reapertura ? eventos?.findLast((e) => e.tipo === "reabierta") : undefined;
 
   return (
     <>
@@ -98,24 +94,8 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
             </p>
           )}
 
-          {/* Reabierta: el motivo queda a la vista hasta que se vuelve a terminar */}
-          {pendiente && orden.motivo_reapertura && (
-            <div role="note" className="flex items-start gap-3 rounded-xl border border-[#fda29b] bg-[#fff4ed] px-4 py-3">
-              <IconoAlerta className="mt-0.5 size-5 text-[#b42318]" />
-              <div className="min-w-0">
-                <p className="font-semibold text-[#b42318]">Reabierta</p>
-                <p className="break-words">“{orden.motivo_reapertura}”</p>
-                {reapertura && (
-                  <p className="text-[13px] text-muted">
-                    {reapertura.autor && `${nombreCompleto(reapertura.autor)} · `}
-                    {formatFechaHora(reapertura.created_at)}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          <article className="tarjeta overflow-hidden">
+          {/* Quien hizo que y cuando (y el motivo de una reapertura) esta solo en el historial */}
+          <article className={`tarjeta overflow-hidden ${esReabierta(orden) ? TARJETA_REABIERTA : ""}`}>
             <div className="flex flex-col gap-2.5 border-b border-border p-[18px] pc:p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="num text-[13px] text-muted">{numeroOrden(orden.id)}</span>
@@ -132,35 +112,13 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
                   {orden.escuelas?.nombre && ` (${orden.escuelas.nombre})`}, {orden.ubicacion}
                 </span>
               </p>
+              <p className="flex items-center gap-1.5 text-sm text-muted tabular-nums">
+                <IconoCalendario className="size-4" />
+                {formatFecha(orden.fecha)}
+              </p>
             </div>
 
             <div className="flex flex-col gap-[18px] p-[18px] pc:p-5">
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="rounded-[10px] bg-background px-3.5 py-3">
-                  <span className="text-[12.5px] text-muted">Fecha</span>
-                  <b className="block text-lg font-semibold tabular-nums">{formatFecha(orden.fecha)}</b>
-                </div>
-                <div className="rounded-[10px] bg-background px-3.5 py-3">
-                  <span className="text-[12.5px] text-muted">Cargada a las</span>
-                  <b className="block text-lg font-semibold tabular-nums">{formatHora(orden.created_at)}</b>
-                </div>
-              </div>
-
-              {orden.estado === "cerrada" && orden.cerrada_at && (
-                <div className="flex items-start gap-3 rounded-[10px] bg-[#eef0f3] px-3.5 py-3">
-                  <IconoOk className="mt-0.5 size-5 text-[#475467]" />
-                  <div>
-                    <p className="font-semibold">
-                      Terminada el {formatFechaDe(orden.cerrada_at)} a las {formatHora(orden.cerrada_at)}
-                    </p>
-                    <p className="text-[13.5px] text-muted">
-                      {orden.cerrador && `Por ${nombreCompleto(orden.cerrador)} · `}
-                      {duracion(orden.created_at, orden.cerrada_at)} desde que se cargó
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {!!urls?.length && (
                 <div>
                   <p className="dato-titulo">Fotos ({urls.length})</p>
@@ -183,7 +141,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
                 </div>
               )}
 
-              <Historial eventos={eventos ?? []} />
+              <Historial eventos={eventos ?? []} cargada={orden.created_at} />
             </div>
 
             {(puedeTerminar || puedeEditar || puedeReabrir) && (

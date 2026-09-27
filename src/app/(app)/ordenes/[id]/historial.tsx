@@ -1,5 +1,5 @@
 import { IconoAlerta, IconoLapiz, IconoMas, IconoOk } from "@/components/iconos";
-import { formatFecha, formatFechaHora } from "@/lib/fechas";
+import { duracion, formatFecha, formatFechaHora } from "@/lib/fechas";
 import { PRIORIDAD_LABEL, esPrioridad } from "@/lib/ordenes";
 import { nombreCompleto } from "@/lib/usuarios";
 
@@ -57,8 +57,10 @@ function Cambios({ detalle }: { detalle: Record<string, unknown> }) {
   );
 }
 
-// Historial de la orden: quien hizo que y cuando (lo ven todos los que ven la orden)
-export function Historial({ eventos }: { eventos: Evento[] }) {
+// Historial de la orden: quien hizo que y cuando (lo ven todos los que ven la orden).
+// Es el unico lugar con esos datos: el resto de la pantalla no los repite.
+//   `cargada`: created_at de la orden, para "N desde que se cargó" al terminarla
+export function Historial({ eventos, cargada }: { eventos: Evento[]; cargada: string }) {
   if (!eventos.length) return null;
   return (
     <div>
@@ -77,6 +79,7 @@ export function Historial({ eventos }: { eventos: Evento[] }) {
                   {e.autor && ` por ${nombreCompleto(e.autor)}`} · {formatFechaHora(e.created_at)}
                 </p>
                 {e.tipo === "editada" && e.detalle && <Cambios detalle={e.detalle} />}
+                {e.tipo === "terminada" && <p className="mt-0.5">{duracion(cargada, e.created_at)} desde que se cargó</p>}
                 {e.tipo === "reabierta" && typeof e.detalle?.motivo === "string" && (
                   <p className="mt-0.5 break-words text-foreground">Motivo: “{e.detalle.motivo}”</p>
                 )}

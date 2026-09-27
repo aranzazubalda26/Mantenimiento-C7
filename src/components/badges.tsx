@@ -11,8 +11,9 @@ const ESTADO_CLASES: Record<Estado, string> = {
   cerrada: "bg-[#eef0f3] text-[#475467]",
 };
 
-// Orden reabierta (ver esReabierta): borde amarillo en las listas, para distinguirla del resto
-export const BORDE_REABIERTA = "shadow-[inset_0_0_0_2px_#fdb022]";
+// Orden reabierta (ver esReabierta): borde amarillo para distinguirla del resto
+export const BORDE_REABIERTA = "shadow-[inset_0_0_0_2px_#fdb022]"; // su fila en las listas
+export const TARJETA_REABIERTA = "border-[#fdb022] shadow-[0_0_0_1px_#fdb022]"; // su tarjeta en el detalle
 
 const PRIORIDAD_CLASES: Record<Prioridad, string> = {
   baja: "bg-[#eef0f3] text-[#475467]",
