@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { nombre, apellido, email, rol } = await getUsuario();
 
-  // Contador del menu: ordenes sin cerrar que el usuario puede ver (RLS)
+  // Contador del menu: ordenes sin terminar que el usuario puede ver (RLS)
   const supabase = await createClient();
   const { count } = await supabase
     .from("ordenes_trabajo")

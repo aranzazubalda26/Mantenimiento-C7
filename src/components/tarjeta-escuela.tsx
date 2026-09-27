@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
-import { EstadoBadge, PrioridadBadge } from "./badges";
+import { PrioridadBadge } from "./badges";
 import { IconoFlecha, IconoOk } from "./iconos";
 
 export type OrdenResumida = {
@@ -16,17 +16,15 @@ export type OrdenResumida = {
 // Colores de la barrita (mismos que las pastillas de estado)
 const COLOR_ESTADO: Record<Estado, string> = {
   solicitada: "#F79009",
-  en_proceso: "#2E6BE6",
   cerrada: "#D0D5DD",
 };
 
 const ETIQUETA: Record<Estado, [string, string]> = {
   solicitada: ["solicitada", "solicitadas"],
-  en_proceso: ["en proceso", "en proceso"],
-  cerrada: ["cerrada", "cerradas"],
+  cerrada: ["terminada", "terminadas"],
 };
 
-const ORDEN_BARRA: Estado[] = ["solicitada", "en_proceso", "cerrada"];
+const ORDEN_BARRA: Estado[] = ["solicitada", "cerrada"];
 
 const PESO_PRIORIDAD: Record<Prioridad, number> = { urgente: 0, alta: 1, media: 2, baja: 3 };
 const MUESTRA = 3; // cuantas tareas pendientes se ven en la tarjeta
@@ -42,14 +40,13 @@ export function TarjetaEscuela({
   const n = (e: Estado) => ordenes.filter((o) => o.estado === e).length;
   const pendientes = ordenes
     .filter((o) => o.estado !== "cerrada")
-    // Lo mas urgente primero; a igual prioridad, lo solicitado antes que lo que ya esta en proceso
+    // Lo mas urgente primero; a igual prioridad, lo mas viejo primero
     .sort(
       (a, b) =>
         PESO_PRIORIDAD[a.prioridad] - PESO_PRIORIDAD[b.prioridad] ||
-        (a.estado === "solicitada" ? 0 : 1) - (b.estado === "solicitada" ? 0 : 1) ||
         a.created_at.localeCompare(b.created_at),
     );
-  const urgente = pendientes.some((o) => o.prioridad === "urgente" && o.estado === "solicitada");
+  const urgente = pendientes.some((o) => o.prioridad === "urgente");
   const href = `/escuelas/${escuela.id}`;
 
   return (
@@ -117,7 +114,6 @@ export function TarjetaEscuela({
                       {(o.prioridad === "urgente" || o.prioridad === "alta") && (
                         <PrioridadBadge prioridad={o.prioridad} />
                       )}
-                      <EstadoBadge estado={o.estado} chico />
                     </Link>
                   </li>
                 ))}

@@ -4,7 +4,6 @@ import { PrioridadBadge } from "@/components/badges";
 import {
   IconoAlerta,
   IconoFlecha,
-  IconoLlave,
   IconoMas,
   IconoOk,
   IconoTareas,
@@ -66,14 +65,12 @@ export default async function Home() {
   const cuenta = (f: (o: OrdenResumida) => boolean) => ordenes.filter(f).length;
   const nUrgentes = cuenta((o) => o.estado === "solicitada" && o.prioridad === "urgente");
   const nSolicitadas = cuenta((o) => o.estado === "solicitada");
-  const nEnProceso = cuenta((o) => o.estado === "en_proceso");
-  const nCerradas = cuenta((o) => o.estado === "cerrada");
+  const nTerminadas = cuenta((o) => o.estado === "cerrada");
 
   const resumen = [
     { n: nUrgentes, titulo: "Urgentes solicitadas", sub: nUrgentes ? "Necesitan atención ya" : "Todo bajo control", color: "#B42318", fondo: "#FEE4E2", icono: <IconoAlerta /> },
-    { n: nSolicitadas, titulo: "Solicitadas", sub: nSolicitadas ? "Todavía no se empezaron" : "Nada pendiente", color: "#93370D", fondo: "#FEF0C7", icono: <IconoTareas /> },
-    { n: nEnProceso, titulo: "En proceso", sub: nEnProceso ? "Se están trabajando" : "Nada en curso", color: "#1E40AF", fondo: "#DCE8FD", icono: <IconoLlave /> },
-    { n: nCerradas, titulo: "Cerradas", sub: "Desde el inicio", color: "#475467", fondo: "#EEF0F3", icono: <IconoOk /> },
+    { n: nSolicitadas, titulo: "Solicitadas", sub: nSolicitadas ? "Falta hacerlas" : "Nada pendiente", color: "#93370D", fondo: "#FEF0C7", icono: <IconoTareas /> },
+    { n: nTerminadas, titulo: "Terminadas", sub: "Desde el inicio", color: "#475467", fondo: "#EEF0F3", icono: <IconoOk /> },
   ];
 
   return (
@@ -114,7 +111,7 @@ export default async function Home() {
                   {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
                 </p>
               ) : (
-                <div className="grid items-start gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
+                <div className="grid items-start gap-3.5 sm:grid-cols-2">
                   {escuelas.map((e) => (
                     <TarjetaEscuela
                       key={e.id}
@@ -126,7 +123,7 @@ export default async function Home() {
               )}
             </section>
 
-            <div className="grid grid-cols-2 gap-2.5 min-[1180px]:grid-cols-4 min-[1180px]:gap-3.5">
+            <div className="grid grid-cols-3 gap-2.5 pc:gap-3.5">
               {resumen.map((r) => (
                 <div key={r.titulo} className="tarjeta grid grid-cols-[auto_1fr] items-center gap-x-3 p-3.5 pc:px-[18px] pc:py-4">
                   <span className="grid size-9 place-items-center rounded-[10px]" style={{ background: r.fondo, color: r.color }}>

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { IconoLlave, IconoOk } from "@/components/iconos";
+import { IconoOk } from "@/components/iconos";
 import { ErrorMsg } from "@/components/ui";
 import type { Estado } from "@/lib/ordenes";
 import { cambiarEstado } from "./actions";
 
-// Botones para mover la orden de estado (supervisor de la escuela o admin).
-// Cerrar pide confirmacion: en la obra es facil tocar sin querer.
+// Solicitada -> Terminada (supervisor de la escuela o admin). Pide confirmacion:
+// en la obra es facil tocar sin querer. Solo el admin puede reabrir.
 export function CambiarEstado({
   ordenId,
   estado,
@@ -29,12 +29,11 @@ export function CambiarEstado({
     });
 
   if (estado === "cerrada") {
-    // Solo el admin puede reabrir
     if (!esAdmin) return null;
     return (
       <div className="flex flex-col gap-2.5">
         {error && <ErrorMsg mensaje={error} />}
-        <button type="button" disabled={pending} onClick={() => ir("en_proceso")} className="btn-secondary self-start">
+        <button type="button" disabled={pending} onClick={() => ir("solicitada")} className="btn-secondary self-start">
           {pending ? "Reabriendo…" : "Reabrir orden"}
         </button>
       </div>
@@ -44,17 +43,15 @@ export function CambiarEstado({
   if (confirmando) {
     return (
       <div className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary-soft p-4">
-        <p className="font-semibold">¿Cerrar la orden?</p>
-        <p className="-mt-2 text-sm text-muted">
-          Queda registrada la fecha y hora de ahora como cierre del trabajo.
-        </p>
+        <p className="font-semibold">¿Marcar la orden como terminada?</p>
+        <p className="-mt-2 text-sm text-muted">Queda registrada la fecha y hora de ahora.</p>
         {error && <ErrorMsg mensaje={error} />}
         <div className="flex gap-2.5 *:flex-1">
           <button type="button" disabled={pending} onClick={() => setConfirmando(false)} className="btn-secondary">
             Cancelar
           </button>
           <button type="button" disabled={pending} onClick={() => ir("cerrada")} className="btn-primary">
-            {pending ? "Cerrando…" : "Sí, cerrar"}
+            {pending ? "Guardando…" : "Sí, terminada"}
           </button>
         </div>
       </div>
@@ -62,24 +59,9 @@ export function CambiarEstado({
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {error && <ErrorMsg mensaje={error} />}
-      <div className="flex flex-col gap-2.5 sm:flex-row">
-        {estado === "solicitada" ? (
-          <button type="button" disabled={pending} onClick={() => ir("en_proceso")} className="btn-oscuro min-h-[50px] sm:flex-1">
-            <IconoLlave className="size-[18px]" />
-            {pending ? "Guardando…" : "Marcar en proceso"}
-          </button>
-        ) : (
-          <button type="button" disabled={pending} onClick={() => ir("solicitada")} className="btn-secondary min-h-[50px] text-muted sm:flex-1">
-            {pending ? "Guardando…" : "Volver a solicitada"}
-          </button>
-        )}
-        <button type="button" disabled={pending} onClick={() => setConfirmando(true)} className="btn-primary min-h-[50px] sm:flex-1">
-          <IconoOk className="size-[18px]" />
-          Cerrar orden
-        </button>
-      </div>
-    </div>
+    <button type="button" onClick={() => setConfirmando(true)} className="btn-primary min-h-[50px] w-full">
+      <IconoOk className="size-[18px]" />
+      Marcar como terminada
+    </button>
   );
 }

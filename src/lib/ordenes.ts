@@ -10,14 +10,14 @@ export const PRIORIDAD_LABEL: Record<Prioridad, string> = {
   urgente: "Urgente",
 };
 
-// solicitada -> en_proceso -> cerrada (la cierra el supervisor; la base guarda cuando y quien)
-export const ESTADOS = ["solicitada", "en_proceso", "cerrada"] as const;
+// solicitada -> cerrada. En la app "cerrada" se muestra como "Terminada"
+// (la marca el supervisor; la base guarda cuando y quien)
+export const ESTADOS = ["solicitada", "cerrada"] as const;
 export type Estado = (typeof ESTADOS)[number];
 
 export const ESTADO_LABEL: Record<Estado, string> = {
   solicitada: "Solicitada",
-  en_proceso: "En proceso",
-  cerrada: "Cerrada",
+  cerrada: "Terminada",
 };
 
 // Sugerencias para "Dónde, dentro de la escuela" (se puede escribir cualquier otra cosa)

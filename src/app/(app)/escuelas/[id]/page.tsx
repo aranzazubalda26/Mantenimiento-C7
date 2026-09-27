@@ -25,12 +25,11 @@ type Escuela = {
 const FILTROS: { valor: Estado | "todas"; texto: string }[] = [
   { valor: "todas", texto: "Todas" },
   { valor: "solicitada", texto: "Solicitadas" },
-  { valor: "en_proceso", texto: "En proceso" },
-  { valor: "cerrada", texto: "Cerradas" },
+  { valor: "cerrada", texto: "Terminadas" },
 ];
 
-// Orden de la lista: primero lo que falta hacer, al final lo cerrado
-const ORDEN_ESTADO: Record<Estado, number> = { solicitada: 0, en_proceso: 1, cerrada: 2 };
+// Orden de la lista: primero lo que falta hacer, al final lo terminado
+const ORDEN_ESTADO: Record<Estado, number> = { solicitada: 0, cerrada: 1 };
 
 export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
   const usuario = await getUsuario();

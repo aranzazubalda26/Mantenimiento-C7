@@ -123,7 +123,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
                   <IconoOk className="mt-0.5 size-5 text-[#475467]" />
                   <div>
                     <p className="font-semibold">
-                      Cerrada el {formatFechaDe(orden.cerrada_at)} a las {formatHora(orden.cerrada_at)}
+                      Terminada el {formatFechaDe(orden.cerrada_at)} a las {formatHora(orden.cerrada_at)}
                     </p>
                     <p className="text-[13.5px] text-muted">
                       {orden.cerrador && `Por ${nombreCompleto(orden.cerrador)} · `}

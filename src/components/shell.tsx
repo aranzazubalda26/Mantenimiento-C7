@@ -184,7 +184,7 @@ function Lateral({
                     {item.label}
                     {contador > 0 && (
                       <span
-                        title="Órdenes sin cerrar"
+                        title="Órdenes sin terminar"
                         className={`ml-auto grid h-[22px] min-w-[22px] place-items-center rounded-full px-[7px] text-xs font-semibold ${
                           activo ? "bg-white text-primary" : "bg-background text-muted"
                         }`}
