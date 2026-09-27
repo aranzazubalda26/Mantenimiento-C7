@@ -5,6 +5,11 @@ export function hoyISO() {
   return new Date().toLocaleDateString("en-CA", { timeZone: TZ });
 }
 
+// Fecha de hace `dias` dias en Argentina como YYYY-MM-DD (0 = hoy)
+export function haceDiasISO(dias: number) {
+  return new Date(Date.now() - dias * 864e5).toLocaleDateString("en-CA", { timeZone: TZ });
+}
+
 // "Sábado 26 de septiembre" (para el encabezado)
 export function fechaLarga() {
   const partes = new Intl.DateTimeFormat("es-AR", {
