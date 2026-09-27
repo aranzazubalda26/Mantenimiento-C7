@@ -125,6 +125,7 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
         <ListaOrdenes
           ordenes={visibles}
           sinEscuela
+          marcarTerminadas={filtro === "todas"}
           vacio={
             <>
               {filtro === "todas"

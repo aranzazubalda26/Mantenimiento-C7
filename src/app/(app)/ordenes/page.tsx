@@ -123,6 +123,7 @@ export default async function OrdenesPage(props: PageProps<"/ordenes">) {
 
         <ListaOrdenes
           ordenes={ordenes}
+          marcarTerminadas={vista === "todas"}
           vacio={
             hayFiltros
               ? "No hay órdenes con estos filtros."
