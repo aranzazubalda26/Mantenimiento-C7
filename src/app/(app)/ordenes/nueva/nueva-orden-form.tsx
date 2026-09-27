@@ -101,7 +101,6 @@ export function NuevaOrdenForm({
     if (!descripcion.trim()) return "Escribí qué hay que hacer.";
     if (!ubicacion.trim()) return "Indicá dónde es, dentro de la escuela.";
     if (!prioridad) return "Elegí la prioridad.";
-    if (fotos.length === 0) return "Sumá al menos una foto.";
     return null;
   };
 
@@ -243,7 +242,7 @@ export function NuevaOrdenForm({
           <div className="flex items-baseline justify-between">
             <span className="text-sm font-semibold">Fotos</span>
             <span className="text-xs text-muted">
-              {fotos.length}/{MAX_FOTOS} · mínimo 1
+              {fotos.length}/{MAX_FOTOS} · opcional
             </span>
           </div>
           <FotosInput

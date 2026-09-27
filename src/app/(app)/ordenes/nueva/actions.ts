@@ -16,7 +16,7 @@ export type NuevaOrdenInput = {
   descripcion: string;
   prioridad: string;
   ubicacion: string;
-  fotos: string[]; // paths ya subidos a Storage (bucket ordenes-fotos)
+  fotos: string[]; // paths ya subidos a Storage (bucket ordenes-fotos); puede ir vacio
 };
 
 type Resultado = { ok: true; id: number } | { ok: false; error: string };
@@ -38,7 +38,6 @@ export async function crearOrden(input: NuevaOrdenInput): Promise<Resultado> {
   if (ubicacion.length > MAX_UBICACION) return { ok: false, error: "La ubicación es demasiado larga." };
   if (!descripcion) return { ok: false, error: "Describí la tarea." };
   if (descripcion.length > MAX_DESCRIPCION) return { ok: false, error: "La descripción es demasiado larga." };
-  if (fotos.length === 0) return { ok: false, error: "Adjuntá al menos una foto." };
   if (fotos.length > MAX_FOTOS) return { ok: false, error: `Máximo ${MAX_FOTOS} fotos.` };
   if (fotos.some((p) => !p.startsWith(`${usuario.id}/`))) {
     return { ok: false, error: "Fotos inválidas." };
