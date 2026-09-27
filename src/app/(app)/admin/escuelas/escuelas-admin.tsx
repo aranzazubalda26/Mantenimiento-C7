@@ -148,7 +148,7 @@ function CamposEscuela({
         />
       </label>
       <SelectPersona name="supervisor_id" label="Supervisor/a" personas={supervisores} value={valores.supervisorId} />
-      <SelectPersona name="inspector_id" label="Inspector" personas={inspectores} value={valores.inspectorId} />
+      <SelectPersona name="inspector_id" label="Inspector/a" personas={inspectores} value={valores.inspectorId} />
     </div>
   );
 }
@@ -261,7 +261,7 @@ function EscuelaFila({ escuela: e, ...equipo }: { escuela: Escuela } & Equipo) {
               <span className="text-muted">Supervisor/a:</span> {nombreCompleto(e.supervisor)}
             </span>
             <span>
-              <span className="text-muted">Inspector:</span> {nombreCompleto(e.inspector)}
+              <span className="text-muted">Inspector/a:</span> {nombreCompleto(e.inspector)}
             </span>
           </p>
         </div>
