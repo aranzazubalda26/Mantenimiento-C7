@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppHeader, Pagina } from "@/components/app-header";
 import { EstadoBadge, PrioridadBadge } from "@/components/badges";
-import { IconoAtras, IconoLugar, IconoOk } from "@/components/iconos";
+import { IconoLugar, IconoOk } from "@/components/iconos";
+import { Volver } from "@/components/volver";
 import { getUsuario } from "@/lib/auth";
 import { duracion, fechaCorta, formatFecha, formatFechaDe, formatFechaHora, formatHora } from "@/lib/fechas";
 import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
@@ -69,10 +69,11 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
       />
       <Pagina>
         <div className="flex w-full max-w-[720px] flex-col gap-4">
-          <Link href="/" className="inline-flex min-h-10 w-max items-center gap-1.5 font-medium text-muted hover:text-foreground">
-            <IconoAtras className="size-[18px]" />
-            Inicio
-          </Link>
+          {orden.escuelas ? (
+            <Volver href={`/escuelas/${orden.escuelas.id}`} a={orden.escuelas.direccion} />
+          ) : (
+            <Volver href="/" a="inicio" />
+          )}
 
           {creada && (
             <p role="status" className="flex items-center gap-2.5 rounded-xl bg-primary-soft px-4 py-3 text-sm font-semibold text-primary">

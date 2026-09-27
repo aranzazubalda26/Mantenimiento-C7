@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppHeader, Pagina } from "@/components/app-header";
-import { IconoAtras, IconoMas } from "@/components/iconos";
+import { IconoMas } from "@/components/iconos";
 import { ListaOrdenes, type OrdenLista } from "@/components/lista-ordenes";
+import { Volver } from "@/components/volver";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import { ESTADOS, type Estado } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
@@ -82,10 +83,7 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
       </AppHeader>
 
       <Pagina>
-        <Link href="/" className="inline-flex min-h-10 w-max items-center gap-1.5 font-medium text-muted hover:text-foreground">
-          <IconoAtras className="size-[18px]" />
-          Inicio
-        </Link>
+        <Volver href="/" a="inicio" />
 
         {/* Celular: datos de la escuela arriba y el equipo abajo; PC: todo en una fila */}
         <section className="tarjeta flex flex-col gap-3 p-4 pc:flex-row pc:items-center pc:gap-6 pc:px-5">

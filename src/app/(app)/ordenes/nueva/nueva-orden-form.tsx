@@ -53,6 +53,8 @@ export function NuevaOrdenForm({
 
   const escuela = escuelas.find((e) => e.id === escuelaId) ?? null;
   const enviando = progreso !== null;
+  // Cancelar vuelve al padre: la escuela si se entro desde una escuela; si no, el inicio
+  const alCancelar = escuelaInicial ? `/escuelas/${escuelaInicial}` : "/";
 
   if (escuelas.length === 0) {
     return (
@@ -86,7 +88,7 @@ export function NuevaOrdenForm({
           </Campo>
         </Bloque>
         <PieForm>
-          <Link href="/" className="btn-secondary">
+          <Link href={alCancelar} className="btn-secondary">
             Cancelar
           </Link>
           <button type="button" disabled={!escuelaId} onClick={() => setPaso(2)} className="btn-primary">
@@ -260,7 +262,7 @@ export function NuevaOrdenForm({
       {error && <ErrorMsg mensaje={error} />}
 
       <PieForm>
-        <Link href="/" className="btn-secondary" aria-disabled={enviando}>
+        <Link href={alCancelar} className="btn-secondary" aria-disabled={enviando}>
           Cancelar
         </Link>
         <button type="submit" disabled={enviando} className="btn-primary">
