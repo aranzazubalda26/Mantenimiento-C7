@@ -9,6 +9,7 @@ import {
   IconoEscuela,
   IconoGente,
   IconoInicio,
+  IconoTareas,
   IconoLlave,
   IconoMas,
   IconoMenu,
@@ -24,6 +25,7 @@ type Item = {
   icono: React.ReactNode;
   roles: Rol[];
   contador?: "abiertas";
+  activa: (pathname: string) => boolean; // en que pantallas queda marcada
 };
 type Seccion = { titulo: string; items: Item[] };
 
@@ -32,15 +34,16 @@ const SECCIONES: Seccion[] = [
   {
     titulo: "Órdenes",
     items: [
-      { href: "/", label: "Inicio", icono: <IconoInicio />, roles: ["admin", "supervisor", "inspector"], contador: "abiertas" },
-      { href: "/ordenes/nueva", label: "Nueva orden", icono: <IconoMas />, roles: ["admin", "inspector"] },
+      { href: "/", label: "Inicio", icono: <IconoInicio />, roles: ["admin", "supervisor", "inspector"], activa: (p) => p === "/" || p.startsWith("/escuelas/") },
+      { href: "/ordenes", label: "Órdenes", icono: <IconoTareas />, roles: ["admin", "supervisor", "inspector"], contador: "abiertas", activa: (p) => p === "/ordenes" || /^\/ordenes\/\d+/.test(p) },
+      { href: "/ordenes/nueva", label: "Nueva orden", icono: <IconoMas />, roles: ["admin", "inspector"], activa: (p) => p === "/ordenes/nueva" },
     ],
   },
   {
     titulo: "Administración",
     items: [
-      { href: "/admin/escuelas", label: "Escuelas", icono: <IconoEscuela />, roles: ["admin"] },
-      { href: "/admin/usuarios", label: "Usuarios", icono: <IconoGente />, roles: ["admin"] },
+      { href: "/admin/escuelas", label: "Escuelas", icono: <IconoEscuela />, roles: ["admin"], activa: (p) => p.startsWith("/admin/escuelas") },
+      { href: "/admin/usuarios", label: "Usuarios", icono: <IconoGente />, roles: ["admin"], activa: (p) => p.startsWith("/admin/usuarios") },
     ],
   },
 ];
@@ -166,7 +169,7 @@ function Lateral({
           <p className="px-2.5 pb-1.5 text-xs font-semibold text-muted">{s.titulo}</p>
           <ul className="flex flex-col gap-0.5">
             {s.items.map((item) => {
-              const activo = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              const activo = item.activa(pathname);
               const contador = item.contador === "abiertas" ? abiertas : 0;
               return (
                 <li key={item.href}>
