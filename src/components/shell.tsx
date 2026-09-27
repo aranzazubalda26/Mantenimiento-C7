@@ -136,7 +136,7 @@ function Tab({
 }
 
 // Avatar del encabezado (solo celular; en PC esta la barra lateral):
-// abre el menu con el usuario, la administracion y Salir
+// muestra el usuario y Salir (Escuelas y Usuarios estan en la barra de abajo)
 export function MenuUsuario() {
   const ctx = useContext(ShellContext);
   const [abierto, setAbierto] = useState(false);
@@ -177,12 +177,6 @@ export function MenuUsuario() {
             </p>
             <p className="truncate text-[13px] text-muted">{usuario.rol ? ROL_LABEL[usuario.rol] : "Sin acceso"}</p>
           </div>
-          {usuario.rol === "admin" && (
-            <div className="border-b border-border py-1">
-              <ItemMenu href="/admin/escuelas" icono={<IconoEscuela />} texto="Escuelas" onClick={() => setAbierto(false)} />
-              <ItemMenu href="/admin/usuarios" icono={<IconoGente />} texto="Usuarios" onClick={() => setAbierto(false)} />
-            </div>
-          )}
           <form action={logout} className="py-1">
             <button type="submit" className="flex min-h-11 w-full items-center gap-3 px-4 font-medium text-danger hover:bg-fila-hover">
               <IconoSalir />
@@ -192,25 +186,6 @@ export function MenuUsuario() {
         </div>
       )}
     </div>
-  );
-}
-
-function ItemMenu({
-  href,
-  icono,
-  texto,
-  onClick,
-}: {
-  href: string;
-  icono: React.ReactNode;
-  texto: string;
-  onClick: () => void;
-}) {
-  return (
-    <Link href={href} onClick={onClick} className="flex min-h-11 items-center gap-3 px-4 font-medium hover:bg-fila-hover">
-      <span className="text-muted">{icono}</span>
-      {texto}
-    </Link>
   );
 }
 

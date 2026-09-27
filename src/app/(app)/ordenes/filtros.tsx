@@ -58,7 +58,7 @@ export function FiltrosOrdenes({
         <option value="">Todas las escuelas</option>
         {escuelas.map((e) => (
           <option key={e.id} value={e.id}>
-            {e.id} · {e.direccion}
+            {e.direccion}
           </option>
         ))}
       </select>
