@@ -147,7 +147,7 @@ function CamposEscuela({
           className="input"
         />
       </label>
-      <SelectPersona name="supervisor_id" label="Supervisor" personas={supervisores} value={valores.supervisorId} />
+      <SelectPersona name="supervisor_id" label="Supervisor/a" personas={supervisores} value={valores.supervisorId} />
       <SelectPersona name="inspector_id" label="Inspector" personas={inspectores} value={valores.inspectorId} />
     </div>
   );
@@ -258,7 +258,7 @@ function EscuelaFila({ escuela: e, ...equipo }: { escuela: Escuela } & Equipo) {
           {e.nombre && <p className="truncate text-[13px] text-muted">{e.nombre}</p>}
           <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[13.5px]">
             <span>
-              <span className="text-muted">Supervisor:</span> {nombreCompleto(e.supervisor)}
+              <span className="text-muted">Supervisor/a:</span> {nombreCompleto(e.supervisor)}
             </span>
             <span>
               <span className="text-muted">Inspector:</span> {nombreCompleto(e.inspector)}

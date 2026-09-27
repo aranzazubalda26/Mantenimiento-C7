@@ -97,7 +97,7 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
           </div>
           <dl className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border pt-3 text-sm pc:border-0 pc:pt-0">
             <div>
-              <dt className="text-[12.5px] text-muted">Supervisor</dt>
+              <dt className="text-[12.5px] text-muted">Supervisor/a</dt>
               <dd className="font-medium">{nombreCompleto(escuela.supervisor)}</dd>
             </div>
             <div>
