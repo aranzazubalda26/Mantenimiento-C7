@@ -111,7 +111,7 @@ export default async function Home() {
                   {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
                 </p>
               ) : (
-                <div className="grid items-start gap-3.5 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-2.5 sm:items-start sm:gap-3.5">
                   {escuelas.map((e) => (
                     <TarjetaEscuela
                       key={e.id}

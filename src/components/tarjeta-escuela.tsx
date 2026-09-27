@@ -49,13 +49,46 @@ export function TarjetaEscuela({
   const urgente = pendientes.some((o) => o.prioridad === "urgente");
   const href = `/escuelas/${escuela.id}`;
 
+  const barrita = ordenes.length > 0 && (
+    <span className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-background">
+      {ORDEN_BARRA.map((e) =>
+        n(e) ? <span key={e} style={{ flex: n(e), background: COLOR_ESTADO[e] }} /> : null,
+      )}
+    </span>
+  );
+
   return (
     <article
       className={`tarjeta flex flex-col overflow-hidden transition-colors hover:border-border-strong ${
         urgente ? "border-[#fda29b] shadow-[0_0_0_1px_#fda29b]" : ""
       }`}
     >
-      <Link href={href} className="flex flex-col gap-3 p-4 pb-3 hover:bg-fila-hover pc:p-[18px] pc:pb-3">
+      {/* Celular: tarjeta compacta de tablero (dos por fila). Toda la tarjeta abre la escuela */}
+      <Link href={href} className="flex flex-1 flex-col gap-2 p-3 active:bg-fila-hover sm:hidden">
+        <span className="flex items-center justify-between gap-1">
+          <span className="esc-num">{escuela.id}</span>
+          {urgente && <PrioridadBadge prioridad="urgente" />}
+        </span>
+        <span className="line-clamp-2 text-[14.5px] leading-snug font-bold tracking-[-0.01em]">
+          {escuela.direccion}
+        </span>
+        <span className="mt-auto flex items-baseline gap-1.5 pt-1">
+          <b
+            className={`text-[26px] leading-none font-bold tracking-[-0.02em] tabular-nums ${
+              pendientes.length ? "" : "text-muted/50"
+            }`}
+          >
+            {pendientes.length}
+          </b>
+          <span className="text-[12.5px] text-muted">
+            {pendientes.length === 1 ? "pendiente" : "pendientes"}
+          </span>
+        </span>
+        {barrita || <span className="h-1.5 rounded-full bg-background" />}
+      </Link>
+
+      {/* PC / tablet: ademas muestra las tareas pendientes */}
+      <Link href={href} className="hidden flex-col gap-3 p-[18px] pb-3 hover:bg-fila-hover sm:flex">
         <div className="flex items-start gap-3">
           <span className="esc-num h-9 min-w-9 text-sm">{escuela.id}</span>
           <div className="min-w-0 flex-1">
@@ -68,11 +101,7 @@ export function TarjetaEscuela({
 
         {ordenes.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            <span className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-background">
-              {ORDEN_BARRA.map((e) =>
-                n(e) ? <span key={e} style={{ flex: n(e), background: COLOR_ESTADO[e] }} /> : null,
-              )}
-            </span>
+            {barrita}
             <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12.5px] text-muted">
               {ORDEN_BARRA.map((e) =>
                 n(e) ? (
@@ -88,12 +117,11 @@ export function TarjetaEscuela({
         )}
       </Link>
 
-      {/* Muestra de tareas pendientes; las escuelas sin tareas quedan compactas */}
       {ordenes.length > 0 && (
-        <>
+        <div className="hidden flex-1 flex-col sm:flex">
           <div className="flex flex-1 flex-col border-t border-border">
             {pendientes.length === 0 ? (
-              <p className="flex items-center gap-2 px-4 py-3.5 text-[13.5px] text-muted pc:px-[18px]">
+              <p className="flex items-center gap-2 px-[18px] py-3.5 text-[13.5px] text-muted">
                 <IconoOk className="size-4 text-primary" />
                 Sin tareas pendientes
               </p>
@@ -101,10 +129,7 @@ export function TarjetaEscuela({
               <ul className="divide-y divide-border">
                 {pendientes.slice(0, MUESTRA).map((o) => (
                   <li key={o.id}>
-                    <Link
-                      href={`/ordenes/${o.id}`}
-                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-fila-hover pc:px-[18px]"
-                    >
+                    <Link href={`/ordenes/${o.id}`} className="flex items-center gap-2.5 px-[18px] py-2.5 hover:bg-fila-hover">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{o.descripcion}</span>
                         <span className="block truncate text-xs text-muted">
@@ -123,14 +148,14 @@ export function TarjetaEscuela({
 
           <Link
             href={href}
-            className="mt-auto flex min-h-11 items-center justify-between border-t border-border px-4 text-[13.5px] font-semibold text-primary hover:bg-primary-soft pc:px-[18px]"
+            className="mt-auto flex min-h-11 items-center justify-between border-t border-border px-[18px] text-[13.5px] font-semibold text-primary hover:bg-primary-soft"
           >
             {pendientes.length > MUESTRA
               ? `Ver las ${pendientes.length} pendientes`
               : `Ver ${ordenes.length === 1 ? "la tarea" : `las ${ordenes.length} tareas`}`}
             <IconoFlecha className="size-4" />
           </Link>
-        </>
+        </div>
       )}
     </article>
   );
