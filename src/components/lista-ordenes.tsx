@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { fechaCorta } from "@/lib/fechas";
+import { conVolver } from "@/lib/navegacion";
 import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { nombreCompleto } from "@/lib/usuarios";
 import { PrioridadBadge } from "./badges";
@@ -24,14 +25,17 @@ function iniciales(p: { nombre: string; apellido: string } | null) {
 // Sin columna de estado: con solo dos estados, el filtro ya dice cual se esta viendo.
 //   `sinEscuela`: en la pantalla de una escuela no se repite la escuela en cada fila.
 //   `marcarTerminadas`: en listas que mezclan estados, marca las terminadas con una etiqueta.
+//   `origen`: ruta actual (con filtros); la orden la usa para "Volver a …".
 export function ListaOrdenes({
   ordenes,
   vacio,
+  origen,
   sinEscuela,
   marcarTerminadas,
 }: {
   ordenes: OrdenLista[];
   vacio: React.ReactNode;
+  origen: string;
   sinEscuela?: boolean;
   marcarTerminadas?: boolean;
 }) {
@@ -57,7 +61,7 @@ export function ListaOrdenes({
         <ul>
           {ordenes.map((o) => (
             <li key={o.id} className="border-b border-border last:border-b-0">
-              <Link href={`/ordenes/${o.id}`} className={`${columnas} min-h-[72px] hover:bg-fila-hover`}>
+              <Link href={conVolver(`/ordenes/${o.id}`, origen)} className={`${columnas} min-h-[72px] hover:bg-fila-hover`}>
                 <div className="flex min-w-0 flex-col gap-[3px] py-3">
                   <span className="line-clamp-2 font-semibold pc:line-clamp-1">{o.descripcion}</span>
                   <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">

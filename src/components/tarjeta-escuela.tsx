@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { conVolver } from "@/lib/navegacion";
 import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { PrioridadBadge } from "./badges";
 import { IconoFlecha } from "./iconos";
@@ -36,9 +37,9 @@ export function TarjetaEscuela({
   const href = `/escuelas/${escuela.id}`;
 
   const cantidad = (
-    <span className="flex items-baseline gap-1.5">
+    <span className="flex items-baseline gap-1">
       <b
-        className={`text-[26px] leading-none font-bold tracking-[-0.02em] tabular-nums ${
+        className={`text-lg leading-none font-bold tabular-nums ${
           pendientes.length ? "" : "text-muted/50"
         }`}
       >
@@ -55,26 +56,24 @@ export function TarjetaEscuela({
       }`}
     >
       {/* Celular: tarjeta compacta de tablero (dos por fila). Toda la tarjeta abre la escuela */}
-      <Link href={href} className="flex flex-1 flex-col gap-2 p-3 active:bg-fila-hover sm:hidden">
-        <span className="flex items-center justify-between gap-1">
-          <span className="esc-num">{escuela.id}</span>
-          {urgente && <PrioridadBadge prioridad="urgente" />}
-        </span>
+      <Link href={href} className="flex flex-1 flex-col gap-1.5 px-3 py-2.5 active:bg-fila-hover sm:hidden">
         <span className="line-clamp-2 text-[14.5px] leading-snug font-bold tracking-[-0.01em]">
           {escuela.direccion}
         </span>
-        <span className="mt-auto pt-1">{cantidad}</span>
+        <span className="mt-auto flex items-center justify-between gap-1">
+          {cantidad}
+          {urgente && <PrioridadBadge prioridad="urgente" />}
+        </span>
       </Link>
 
       {/* PC / tablet: ademas muestra las tareas pendientes */}
-      <Link href={href} className="hidden flex-col gap-3 p-[18px] pb-3 hover:bg-fila-hover sm:flex">
+      <Link href={href} className="hidden flex-col px-[18px] py-3.5 hover:bg-fila-hover sm:flex">
         <div className="flex items-start gap-3">
-          <span className="esc-num h-9 min-w-9 text-sm">{escuela.id}</span>
           <div className="min-w-0 flex-1">
             <p className="text-[16.5px] leading-snug font-bold tracking-[-0.01em]">{escuela.direccion}</p>
             {escuela.nombre && <p className="truncate text-[13px] text-muted">{escuela.nombre}</p>}
           </div>
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-2">
             {urgente && <PrioridadBadge prioridad="urgente" />}
             {cantidad}
           </div>
@@ -87,7 +86,7 @@ export function TarjetaEscuela({
             <ul className="divide-y divide-border">
               {pendientes.slice(0, MUESTRA).map((o) => (
                 <li key={o.id}>
-                  <Link href={`/ordenes/${o.id}`} className="flex items-center gap-2.5 px-[18px] py-2.5 hover:bg-fila-hover">
+                  <Link href={conVolver(`/ordenes/${o.id}`, "/")} className="flex items-center gap-2.5 px-[18px] py-2.5 hover:bg-fila-hover">
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{o.descripcion}</span>
                       <span className="block truncate text-xs text-muted">

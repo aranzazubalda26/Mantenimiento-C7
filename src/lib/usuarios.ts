@@ -5,8 +5,14 @@ export type Rol = (typeof ROLES)[number];
 
 export const ROL_LABEL: Record<Rol, string> = {
   admin: "Admin",
-  supervisor: "Supervisor",
-  inspector: "Inspector",
+  supervisor: "Supervisor/a",
+  inspector: "Inspector/a",
+};
+
+export const ROL_PLURAL: Record<Rol, string> = {
+  admin: "Admin",
+  supervisor: "Supervisores/as",
+  inspector: "Inspectores/as",
 };
 
 export const MIN_PASSWORD = 8;

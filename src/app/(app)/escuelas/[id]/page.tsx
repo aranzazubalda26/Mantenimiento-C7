@@ -5,6 +5,7 @@ import { AppHeader, Pagina } from "@/components/app-header";
 import { IconoMas } from "@/components/iconos";
 import { ListaOrdenes, type OrdenLista } from "@/components/lista-ordenes";
 import { Volver } from "@/components/volver";
+import { rutaCon } from "@/lib/navegacion";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import { ESTADOS, type Estado } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +26,7 @@ type Escuela = {
 
 const FILTROS: { valor: Estado | "todas"; texto: string }[] = [
   { valor: "todas", texto: "Todas" },
-  { valor: "solicitada", texto: "Solicitadas" },
+  { valor: "solicitada", texto: "Pendientes" },
   { valor: "cerrada", texto: "Terminadas" },
 ];
 
@@ -72,7 +73,7 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
     <>
       <AppHeader
         titulo={escuela.direccion}
-        subtitulo={`Escuela N° ${escuela.id}${escuela.nombre ? ` · ${escuela.nombre}` : ""}`}
+        subtitulo={escuela.nombre ?? undefined}
       >
         {puedeCrear && (
           <Link href={`/ordenes/nueva?escuela=${escuela.id}`} className="btn-primary" aria-label="Nueva orden en esta escuela">
@@ -88,7 +89,6 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
         {/* Celular: datos de la escuela arriba y el equipo abajo; PC: todo en una fila */}
         <section className="tarjeta flex flex-col gap-3 p-4 pc:flex-row pc:items-center pc:gap-6 pc:px-5">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="esc-num h-10 min-w-10 text-base">{escuela.id}</span>
             <div className="min-w-0">
               <p className="text-lg leading-tight font-bold tracking-[-0.01em]">{escuela.direccion}</p>
               {escuela.nombre && <p className="text-[13.5px] text-muted">{escuela.nombre}</p>}
@@ -124,6 +124,7 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
 
         <ListaOrdenes
           ordenes={visibles}
+          origen={rutaCon(`/escuelas/${escuela.id}`, { estado: filtro === "todas" ? null : filtro })}
           sinEscuela
           marcarTerminadas={filtro === "todas"}
           vacio={

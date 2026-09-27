@@ -4,7 +4,7 @@ import { useActionState, useMemo, useState, useTransition } from "react";
 import { IconoMas, IconoOk } from "@/components/iconos";
 import { ErrorMsg } from "@/components/ui";
 import { generarPassword } from "@/lib/generar-password";
-import { MIN_PASSWORD, ROLES, ROL_LABEL, type Rol } from "@/lib/usuarios";
+import { MIN_PASSWORD, ROLES, ROL_LABEL, ROL_PLURAL, type Rol } from "@/lib/usuarios";
 import {
   cambiarActivo,
   cambiarPassword,
@@ -52,7 +52,7 @@ export function UsuariosAdmin({ usuarios, miId }: { usuarios: UsuarioFila[]; miI
         <div className="segmento w-max" role="group" aria-label="Filtrar por rol">
           {(["todos", ...ROLES] as Filtro[]).map((f) => (
             <button key={f} type="button" onClick={() => setFiltro(f)} aria-pressed={filtro === f}>
-              {f === "todos" ? "Todos" : `${ROL_LABEL[f]}${f === "admin" ? "" : "es"}`}
+              {f === "todos" ? "Todos" : ROL_PLURAL[f]}
               <span className="text-xs font-normal text-muted">{conteo[f]}</span>
             </button>
           ))}

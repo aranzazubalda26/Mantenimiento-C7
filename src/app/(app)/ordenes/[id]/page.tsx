@@ -4,6 +4,7 @@ import { AppHeader, Pagina } from "@/components/app-header";
 import { EstadoBadge, PrioridadBadge } from "@/components/badges";
 import { IconoLugar, IconoOk } from "@/components/iconos";
 import { Volver } from "@/components/volver";
+import { volverSeguro } from "@/lib/navegacion";
 import { getUsuario } from "@/lib/auth";
 import { duracion, fechaCorta, formatFecha, formatFechaDe, formatFechaHora, formatHora } from "@/lib/fechas";
 import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
@@ -31,7 +32,7 @@ type Orden = {
 export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
   const usuario = await getUsuario();
   const { id } = await props.params;
-  const { creada } = await props.searchParams;
+  const { creada, volver } = await props.searchParams;
   if (!/^\d+$/.test(id)) notFound();
 
   const supabase = await createClient();
@@ -69,11 +70,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
       />
       <Pagina>
         <div className="flex w-full max-w-[720px] flex-col gap-4">
-          {orden.escuelas ? (
-            <Volver href={`/escuelas/${orden.escuelas.id}`} a={orden.escuelas.direccion} />
-          ) : (
-            <Volver href="/" a="inicio" />
-          )}
+          <Volver {...destinoVolver(volverSeguro(volver), orden.escuelas)} />
 
           {creada && (
             <p role="status" className="flex items-center gap-2.5 rounded-xl bg-primary-soft px-4 py-3 text-sm font-semibold text-primary">
@@ -169,4 +166,16 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
       </Pagina>
     </>
   );
+}
+
+// "Volver a …": a donde estaba el usuario si se sabe; si no, a la escuela de la orden
+function destinoVolver(origen: string | null, escuela: { id: number; direccion: string } | null) {
+  if (origen) {
+    const ruta = origen.split("?")[0];
+    if (ruta === "/") return { href: origen, a: "inicio" };
+    if (ruta === "/ordenes") return { href: origen, a: "órdenes" };
+    if (escuela && ruta === `/escuelas/${escuela.id}`) return { href: origen, a: escuela.direccion };
+    return { href: origen, a: "la pantalla anterior" };
+  }
+  return escuela ? { href: `/escuelas/${escuela.id}`, a: escuela.direccion } : { href: "/", a: "inicio" };
 }

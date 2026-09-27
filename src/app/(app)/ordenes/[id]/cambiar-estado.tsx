@@ -6,7 +6,7 @@ import { ErrorMsg } from "@/components/ui";
 import type { Estado } from "@/lib/ordenes";
 import { cambiarEstado } from "./actions";
 
-// Solicitada -> Terminada (supervisor de la escuela o admin). Pide confirmacion:
+// Pendiente -> Terminada (supervisor de la escuela o admin). Pide confirmacion:
 // en la obra es facil tocar sin querer. Solo el admin puede reabrir.
 export function CambiarEstado({
   ordenId,

@@ -29,12 +29,12 @@ export default async function Home() {
   const ordenes = todas ?? [];
   const cuenta = (f: (o: OrdenResumida) => boolean) => ordenes.filter(f).length;
   const nUrgentes = cuenta((o) => o.estado === "solicitada" && o.prioridad === "urgente");
-  const nSolicitadas = cuenta((o) => o.estado === "solicitada");
+  const nPendientes = cuenta((o) => o.estado === "solicitada");
   const nTerminadas = cuenta((o) => o.estado === "cerrada");
 
   const resumen = [
     { n: nUrgentes, titulo: "Urgentes", sub: nUrgentes ? "Necesitan atención ya" : "Todo bajo control", color: "#B42318", fondo: "#FEE4E2", icono: <IconoAlerta />, href: "/ordenes" },
-    { n: nSolicitadas, titulo: "Pendientes", sub: nSolicitadas ? "Falta hacerlas" : "Nada pendiente", color: "#93370D", fondo: "#FEF0C7", icono: <IconoTareas />, href: "/ordenes" },
+    { n: nPendientes, titulo: "Pendientes", sub: nPendientes ? "Falta hacerlas" : "Nada pendiente", color: "#93370D", fondo: "#FEF0C7", icono: <IconoTareas />, href: "/ordenes" },
     { n: nTerminadas, titulo: "Terminadas", sub: "Desde el inicio", color: "#475467", fondo: "#EEF0F3", icono: <IconoOk />, href: "/ordenes?ver=terminadas" },
   ];
 
@@ -57,6 +57,26 @@ export default async function Home() {
           </p>
         ) : (
           <>
+            {/* Resumen rapido arriba de todo */}
+            <div className="grid grid-cols-3 gap-2.5 pc:gap-3.5">
+              {resumen.map((r) => (
+                <Link
+                  key={r.titulo}
+                  href={r.href}
+                  className="tarjeta flex flex-col gap-1.5 px-3 py-2.5 transition-colors hover:border-border-strong pc:px-4 pc:py-3"
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="grid size-7 place-items-center rounded-lg" style={{ background: r.fondo, color: r.color }}>
+                      {r.icono}
+                    </span>
+                    <span className="text-2xl leading-none font-bold tracking-[-0.02em] tabular-nums">{r.n}</span>
+                  </span>
+                  <span className="text-[13.5px] font-semibold">{r.titulo}</span>
+                  <span className="hidden text-[12.5px] text-muted sm:block">{r.sub}</span>
+                </Link>
+              ))}
+            </div>
+
             <section className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-base font-semibold tracking-[-0.01em]">
@@ -84,24 +104,6 @@ export default async function Home() {
               )}
             </section>
 
-            <div className="grid grid-cols-3 gap-2.5 pc:gap-3.5">
-              {resumen.map((r) => (
-                <Link
-                  key={r.titulo}
-                  href={r.href}
-                  className="tarjeta grid grid-cols-[auto_1fr] items-center gap-x-3 p-3.5 transition-colors hover:border-border-strong pc:px-[18px] pc:py-4"
-                >
-                  <span className="grid size-9 place-items-center rounded-[10px]" style={{ background: r.fondo, color: r.color }}>
-                    {r.icono}
-                  </span>
-                  <span className="justify-self-end text-[26px] leading-none font-bold tracking-[-0.02em] tabular-nums pc:text-[30px]">
-                    {r.n}
-                  </span>
-                  <span className="col-span-2 mt-3.5 text-[14.5px] font-semibold">{r.titulo}</span>
-                  <span className="col-span-2 text-[13px] text-muted">{r.sub}</span>
-                </Link>
-              ))}
-            </div>
           </>
         )}
       </Pagina>

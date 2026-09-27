@@ -123,6 +123,7 @@ export default async function OrdenesPage(props: PageProps<"/ordenes">) {
 
         <ListaOrdenes
           ordenes={ordenes}
+          origen={hrefVista(vista)}
           marcarTerminadas={vista === "todas"}
           vacio={
             hayFiltros
