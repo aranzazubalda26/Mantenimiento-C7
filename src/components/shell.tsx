@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { logout } from "@/app/login/actions";
 import { ROL_LABEL, type Rol } from "@/lib/usuarios";
-import { IconoEscuela, IconoGente, IconoInicio, IconoMas, IconoSalir, IconoTareas } from "./iconos";
+import { IconoEscuela, IconoGente, IconoInicio, IconoLlave, IconoMas, IconoSalir, IconoTareas } from "./iconos";
 
 type UsuarioShell = { nombre: string; apellido: string; email: string; rol: Rol | null };
 
@@ -14,8 +14,9 @@ const ShellContext = createContext<{ usuario: UsuarioShell } | null>(null);
 // Pantallas donde se esconde la barra de abajo (formularios con sus propios botones)
 const SIN_BARRA = ["/ordenes/nueva"];
 
-// Estructura de las pantallas con sesion: contenido + barra de navegacion abajo
-// (estilo apps de celular). Escuelas, Usuarios y Salir estan en el menu del avatar.
+// Estructura de las pantallas con sesion.
+// Celular: barra de navegacion abajo (estilo app) + menu en el avatar del encabezado.
+// PC (desde 900px): la barra lateral fija de siempre.
 export function Shell({
   usuario,
   pendientes,
@@ -30,7 +31,12 @@ export function Shell({
 
   return (
     <ShellContext.Provider value={{ usuario }}>
-      <div className="flex min-h-dvh flex-col">{children}</div>
+      <div className="min-h-dvh pc:grid pc:grid-cols-[264px_minmax(0,1fr)]">
+        <aside className="sticky top-0 hidden h-dvh overflow-y-auto border-r border-border bg-surface pc:block">
+          <Lateral usuario={usuario} pendientes={pendientes} pathname={pathname} />
+        </aside>
+        <div className="flex min-h-dvh min-w-0 flex-col">{children}</div>
+      </div>
       {conBarra && <BarraInferior rol={usuario.rol} pendientes={pendientes} pathname={pathname} />}
     </ShellContext.Provider>
   );
@@ -45,7 +51,7 @@ function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendien
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-30 pc:hidden border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
     >
       <div className={`mx-auto grid h-16 max-w-md items-center ${puedeCrear ? "grid-cols-3" : "grid-cols-2"}`}>
         <Tab href="/" texto="Inicio" activo={enInicio} icono={<IconoInicio className="size-6" />} />
@@ -109,7 +115,8 @@ function Tab({
   );
 }
 
-// Avatar del encabezado: abre el menu con el usuario, la administracion y Salir
+// Avatar del encabezado (solo celular; en PC esta la barra lateral):
+// abre el menu con el usuario, la administracion y Salir
 export function MenuUsuario() {
   const ctx = useContext(ShellContext);
   const [abierto, setAbierto] = useState(false);
@@ -129,10 +136,9 @@ export function MenuUsuario() {
 
   if (!ctx) return null;
   const { usuario } = ctx;
-  const iniciales = `${usuario.nombre[0] ?? ""}${usuario.apellido[0] ?? ""}`.toUpperCase() || "?";
 
   return (
-    <div ref={caja} className="relative">
+    <div ref={caja} className="relative pc:hidden">
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
@@ -140,7 +146,7 @@ export function MenuUsuario() {
         aria-expanded={abierto}
         className="avatar size-10 ring-2 ring-surface transition-shadow hover:ring-primary/30"
       >
-        {iniciales}
+        {iniciales(usuario)}
       </button>
 
       {abierto && (
@@ -186,4 +192,114 @@ function ItemMenu({
       {texto}
     </Link>
   );
+}
+
+// ---------------------------------------------------------------------------
+// PC: barra lateral fija (la vista de siempre)
+
+type Item = {
+  href: string;
+  label: string;
+  icono: React.ReactNode;
+  roles: Rol[];
+  contador?: boolean;
+  activa: (pathname: string) => boolean; // en que pantallas queda marcada
+};
+type Seccion = { titulo: string; items: Item[] };
+
+// Menu de PC segun rol. Para sumar una pantalla nueva, agregarla aca.
+const SECCIONES: Seccion[] = [
+  {
+    titulo: "Órdenes",
+    items: [
+      { href: "/", label: "Inicio", icono: <IconoInicio />, roles: ["admin", "supervisor", "inspector"], activa: (p) => p === "/" || p.startsWith("/escuelas/") },
+      { href: "/ordenes", label: "Órdenes", icono: <IconoTareas />, roles: ["admin", "supervisor", "inspector"], contador: true, activa: (p) => p === "/ordenes" || /^\/ordenes\/\d+/.test(p) },
+      { href: "/ordenes/nueva", label: "Nueva orden", icono: <IconoMas />, roles: ["admin", "inspector"], activa: (p) => p === "/ordenes/nueva" },
+    ],
+  },
+  {
+    titulo: "Administración",
+    items: [
+      { href: "/admin/escuelas", label: "Escuelas", icono: <IconoEscuela />, roles: ["admin"], activa: (p) => p.startsWith("/admin/escuelas") },
+      { href: "/admin/usuarios", label: "Usuarios", icono: <IconoGente />, roles: ["admin"], activa: (p) => p.startsWith("/admin/usuarios") },
+    ],
+  },
+];
+
+function Lateral({ usuario, pendientes, pathname }: { usuario: UsuarioShell; pendientes: number; pathname: string }) {
+  const rol = usuario.rol;
+  const secciones = SECCIONES.map((s) => ({ ...s, items: s.items.filter((i) => rol && i.roles.includes(rol)) })).filter(
+    (s) => s.items.length > 0,
+  );
+
+  return (
+    <nav aria-label="Menú principal" className="flex min-h-full flex-col gap-6 px-3.5 pb-4 pt-5">
+      <div className="flex items-center gap-2.5 px-2 text-[17px] font-bold tracking-[-0.01em]">
+        <span className="grid size-8 place-items-center rounded-[9px] bg-primary text-white">
+          <IconoLlave className="size-[18px]" />
+        </span>
+        Mantenimiento C7
+      </div>
+
+      {secciones.map((s) => (
+        <div key={s.titulo}>
+          <p className="px-2.5 pb-1.5 text-xs font-semibold text-muted">{s.titulo}</p>
+          <ul className="flex flex-col gap-0.5">
+            {s.items.map((item) => {
+              const activo = item.activa(pathname);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={activo ? "page" : undefined}
+                    className={`flex min-h-[42px] items-center gap-3 rounded-lg px-2.5 font-medium transition-colors ${
+                      activo ? "bg-primary-soft font-semibold text-primary" : "text-muted hover:bg-background hover:text-foreground"
+                    }`}
+                  >
+                    {item.icono}
+                    {item.label}
+                    {item.contador && pendientes > 0 && (
+                      <span
+                        title="Órdenes pendientes"
+                        className={`ml-auto grid h-[22px] min-w-[22px] place-items-center rounded-full px-[7px] text-xs font-semibold ${
+                          activo ? "bg-white text-primary" : "bg-background text-muted"
+                        }`}
+                      >
+                        {pendientes}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+
+      <div className="mt-auto flex flex-col gap-2.5">
+        <div className="flex items-center gap-3 rounded-xl border border-border p-2.5">
+          <span className="avatar">{iniciales(usuario)}</span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">
+              {usuario.nombre ? `${usuario.nombre} ${usuario.apellido}` : usuario.email}
+            </p>
+            <p className="truncate text-[13px] text-muted">{rol ? ROL_LABEL[rol] : "Sin acceso"}</p>
+          </div>
+        </div>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border-strong text-[13px] font-medium text-muted hover:border-muted hover:text-foreground"
+          >
+            <IconoSalir className="size-4" />
+            Salir
+          </button>
+        </form>
+      </div>
+    </nav>
+  );
+}
+
+function iniciales(u: UsuarioShell) {
+  return `${u.nombre[0] ?? ""}${u.apellido[0] ?? ""}`.toUpperCase() || "?";
 }

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppHeader, Pagina } from "@/components/app-header";
+import { IconoMas } from "@/components/iconos";
 import { ListaOrdenes, type OrdenLista } from "@/components/lista-ordenes";
-import { getUsuario } from "@/lib/auth";
+import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import type { Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,7 +23,7 @@ const LIMITE = 300; // terminadas y todas: las mas recientes
 
 // Todas las ordenes que el usuario puede ver (RLS), en una sola lista con filtros
 export default async function OrdenesPage(props: PageProps<"/ordenes">) {
-  await getUsuario(); // exige sesion
+  const usuario = await getUsuario();
   const { ver } = await props.searchParams;
   const vista: Vista = ver === "terminadas" || ver === "todas" ? ver : "pendientes";
 
@@ -53,7 +54,15 @@ export default async function OrdenesPage(props: PageProps<"/ordenes">) {
 
   return (
     <>
-      <AppHeader titulo="Órdenes" subtitulo={`${pendientes ?? 0} pendientes`} />
+      <AppHeader titulo="Órdenes" subtitulo={`${pendientes ?? 0} pendientes`}>
+        {puedeCrearOrdenes(usuario) && (
+          // En el celular esta el boton central de la barra de abajo
+          <Link href="/ordenes/nueva" className="btn-primary hidden pc:inline-flex">
+            <IconoMas className="size-[18px]" />
+            Nueva orden
+          </Link>
+        )}
+      </AppHeader>
 
       <Pagina>
         <div className="segmento w-max" role="group" aria-label="Filtrar órdenes">

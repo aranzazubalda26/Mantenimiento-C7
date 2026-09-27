@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { AppHeader, Pagina } from "@/components/app-header";
-import { IconoAlerta, IconoFlecha, IconoOk, IconoTareas } from "@/components/iconos";
+import { IconoAlerta, IconoFlecha, IconoMas, IconoOk, IconoTareas } from "@/components/iconos";
 import { TarjetaEscuela, type OrdenResumida } from "@/components/tarjeta-escuela";
-import { getUsuario } from "@/lib/auth";
+import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 // Inicio: tablero de escuelas + resumen. El listado de ordenes esta en /ordenes
@@ -40,7 +40,15 @@ export default async function Home() {
 
   return (
     <>
-      <AppHeader titulo={usuario.nombre ? `Hola, ${usuario.nombre}` : "Inicio"} />
+      <AppHeader titulo={usuario.nombre ? `Hola, ${usuario.nombre}` : "Inicio"}>
+        {puedeCrearOrdenes(usuario) && (
+          // En el celular esta el boton central de la barra de abajo
+          <Link href="/ordenes/nueva" className="btn-primary hidden pc:inline-flex">
+            <IconoMas className="size-[18px]" />
+            Nueva orden
+          </Link>
+        )}
+      </AppHeader>
 
       <Pagina>
         {!usuario.rol ? (
