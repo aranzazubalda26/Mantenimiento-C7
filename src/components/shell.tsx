@@ -45,37 +45,57 @@ export function Shell({
 function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendientes: number; pathname: string }) {
   if (!rol) return null;
   const puedeCrear = rol === "admin" || rol === "inspector";
-  const enInicio = pathname === "/" || pathname.startsWith("/escuelas/");
-  const enOrdenes = pathname === "/ordenes" || /^\/ordenes\/\d+/.test(pathname);
+  const esAdmin = rol === "admin";
+
+  const inicio = (
+    <Tab href="/" texto="Inicio" activo={pathname === "/" || pathname.startsWith("/escuelas/")} icono={<IconoInicio className="size-6" />} />
+  );
+  const ordenes = (
+    <Tab
+      href="/ordenes"
+      texto="Órdenes"
+      activo={pathname === "/ordenes" || /^\/ordenes\/\d+/.test(pathname)}
+      icono={<IconoTareas className="size-6" />}
+      contador={pendientes}
+    />
+  );
+  const nueva = puedeCrear && (
+    <Link
+      href="/ordenes/nueva"
+      aria-label="Nueva orden"
+      className="mx-auto -mt-7 flex flex-col items-center gap-1 text-[11.5px] font-semibold text-primary"
+    >
+      <span className="grid size-14 place-items-center rounded-full bg-primary text-white shadow-alta ring-4 ring-surface transition-transform active:scale-95">
+        <IconoMas className="size-7" />
+      </span>
+      Nueva orden
+    </Link>
+  );
+
+  // Admin: Inicio, Ordenes, [+], Escuelas, Usuarios. Inspector: Inicio, [+], Ordenes. Supervisor: Inicio, Ordenes.
+  const columnas = esAdmin ? "grid-cols-5" : puedeCrear ? "grid-cols-3" : "grid-cols-2";
 
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed inset-x-0 bottom-0 z-30 pc:hidden border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md pc:hidden"
     >
-      <div className={`mx-auto grid h-16 max-w-md items-center ${puedeCrear ? "grid-cols-3" : "grid-cols-2"}`}>
-        <Tab href="/" texto="Inicio" activo={enInicio} icono={<IconoInicio className="size-6" />} />
-
-        {puedeCrear && (
-          <Link
-            href="/ordenes/nueva"
-            aria-label="Nueva orden"
-            className="mx-auto -mt-7 flex flex-col items-center gap-1 text-[11.5px] font-semibold text-primary"
-          >
-            <span className="grid size-14 place-items-center rounded-full bg-primary text-white shadow-alta ring-4 ring-surface transition-transform active:scale-95">
-              <IconoMas className="size-7" />
-            </span>
-            Nueva orden
-          </Link>
+      <div className={`mx-auto grid h-16 max-w-md items-center ${columnas}`}>
+        {esAdmin ? (
+          <>
+            {inicio}
+            {ordenes}
+            {nueva}
+            <Tab href="/admin/escuelas" texto="Escuelas" activo={pathname.startsWith("/admin/escuelas")} icono={<IconoEscuela className="size-6" />} />
+            <Tab href="/admin/usuarios" texto="Usuarios" activo={pathname.startsWith("/admin/usuarios")} icono={<IconoGente className="size-6" />} />
+          </>
+        ) : (
+          <>
+            {inicio}
+            {nueva}
+            {ordenes}
+          </>
         )}
-
-        <Tab
-          href="/ordenes"
-          texto="Órdenes"
-          activo={enOrdenes}
-          icono={<IconoTareas className="size-6" />}
-          contador={pendientes}
-        />
       </div>
     </nav>
   );
