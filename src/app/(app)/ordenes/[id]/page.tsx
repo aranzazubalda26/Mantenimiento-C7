@@ -201,6 +201,8 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
               </div>
             )}
           </article>
+          {/* Lugar para que la barra fija de cierre no tape el final de la pantalla en el celular */}
+          {puedeCerrar && <div className="h-20 pc:hidden" aria-hidden />}
         </div>
       </Pagina>
     </>

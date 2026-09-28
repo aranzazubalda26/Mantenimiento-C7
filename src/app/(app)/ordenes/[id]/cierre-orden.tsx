@@ -16,6 +16,7 @@ import { marcarFueraDeAlcance, terminarOrden } from "./actions";
 //   "Marcar como terminada": fotos del trabajo hecho (obligatorias para el supervisor/a) + nota.
 //   "No corresponde a mantenimiento…": fuera de alcance, con motivo obligatorio.
 // Al cerrar vuelve a la pantalla anterior, que muestra el aviso con "Deshacer".
+// La pantalla que la usa deja lugar abajo para la barra fija (ver ordenes/[id]/page.tsx).
 export function CierreOrden({
   ordenId,
   numero,
@@ -98,8 +99,6 @@ export function CierreOrden({
           No corresponde a mantenimiento…
         </button>
       </div>
-      {/* Lugar para que la barra fija no tape el final de la pantalla */}
-      <div className="h-20 pc:hidden" aria-hidden />
 
       {modo === "terminar" && (
         <Hoja titulo="¿Terminaron esta tarea?" subtitulo={`${numero} · ${lugar}`} ocupada={ocupada} onCerrar={cerrarHoja}>

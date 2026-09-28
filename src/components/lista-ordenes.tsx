@@ -13,6 +13,7 @@ export type OrdenLista = {
   estado: Estado;
   ubicacion: string;
   motivo_reapertura: string | null;
+  nota_cierre: string | null; // motivo si esta fuera de alcance
   escuelas: { direccion: string } | null;
   creador: { nombre: string; apellido: string } | null;
 };
@@ -25,6 +26,7 @@ function iniciales(p: { nombre: string; apellido: string } | null) {
 // Celular: descripcion (con la escuela abajo) y la fecha a la derecha.
 // Sin columna de estado: con solo dos estados, el filtro ya dice cual se esta viendo.
 // Las reabiertas llevan un borde amarillo hasta que se vuelven a terminar.
+// Las fuera de alcance muestran el motivo (obra a presupuestar aparte).
 //   `sinEscuela`: en la pantalla de una escuela no se repite la escuela en cada fila.
 //   `marcarTerminadas`: en listas que mezclan estados, marca las terminadas y fuera de alcance con una etiqueta.
 //   `origen`: ruta actual (con filtros); la orden la usa para "Volver a …".
@@ -88,6 +90,11 @@ export function ListaOrdenes({
                     )}
                     {marcarTerminadas && o.estado !== "solicitada" && <EstadoBadge estado={o.estado} chico />}
                   </span>
+                  {o.estado === "fuera_de_alcance" && o.nota_cierre && (
+                    <span className="line-clamp-2 text-[13px] text-[#5b21b6]">
+                      <b className="font-semibold">Motivo:</b> {o.nota_cierre}
+                    </span>
+                  )}
                 </div>
                 {!sinEscuela && (
                   <div className="hidden truncate text-sm font-semibold pc:block">{o.escuelas?.direccion}</div>
