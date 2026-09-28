@@ -14,16 +14,16 @@ export async function marcarTodoLeido(): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-// Los avisos de ordenes borradas no tienen a donde abrirse: se dan por leidos al verlos
-export async function verAvisosSinOrden(): Promise<void> {
+// Avisos que no tienen a donde abrirse: de ordenes borradas, o de ordenes que el usuario ya
+// no puede ver (p. ej. lo sacaron de esa escuela). Se dan por leidos al verlos.
+//   `ocultos`: ids de avisos cuya orden ya no es visible (los detecta la pantalla)
+export async function verAvisosSinOrden(ocultos: number[]): Promise<void> {
   await getUsuario();
+  const ids = (Array.isArray(ocultos) ? ocultos : []).filter(Number.isInteger).slice(0, 200);
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("avisos")
-    .update({ leido_at: new Date().toISOString() })
-    .is("leido_at", null)
-    .is("orden_id", null)
-    .select("id");
+  let q = supabase.from("avisos").update({ leido_at: new Date().toISOString() }).is("leido_at", null);
+  q = ids.length ? q.or(`orden_id.is.null,id.in.(${ids.join(",")})`) : q.is("orden_id", null);
+  const { data, error } = await q.select("id");
   if (error) return console.error("verAvisosSinOrden:", error);
   if (data?.length) refresh();
 }

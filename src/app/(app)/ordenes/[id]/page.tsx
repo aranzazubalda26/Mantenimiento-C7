@@ -7,7 +7,7 @@ import { Volver } from "@/components/volver";
 import { conVolver, linkMapa, volverSeguro } from "@/lib/navegacion";
 import { getUsuario } from "@/lib/auth";
 import { formatFecha } from "@/lib/fechas";
-import { esReabierta, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
+import { BUCKET_FOTOS, esReabierta, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 import { AbrirOrden } from "./abrir-orden";
 import { AccionesOrden } from "./acciones-orden";
@@ -60,7 +60,7 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
 
   const [{ data: urls }, { data: eventos }] = await Promise.all([
     paths.length
-      ? supabase.storage.from("ordenes-fotos").createSignedUrls(paths, 60 * 60)
+      ? supabase.storage.from(BUCKET_FOTOS).createSignedUrls(paths, 60 * 60)
       : Promise.resolve({ data: [] }),
     supabase
       .from("orden_eventos")
@@ -91,7 +91,8 @@ export default async function OrdenPage(props: PageProps<"/ordenes/[id]">) {
         titulo={`Orden ${numeroOrden(orden.id)}`}
         subtitulo={`${orden.escuelas?.direccion ?? ""} · ${orden.ubicacion}`}
       />
-      <AbrirOrden ordenId={orden.id} />
+      {/* Solo quienes tienen campanita: registra "vista" y marca los avisos leidos */}
+      {(usuario.rol === "supervisor" || usuario.rol === "inspector") && <AbrirOrden ordenId={orden.id} />}
       <Pagina>
         <div className="flex w-full max-w-[720px] flex-col gap-4">
           <Volver {...volverA} />

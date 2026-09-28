@@ -1,10 +1,9 @@
 import { comprimirImagen } from "@/lib/comprimir-imagen";
+import { BUCKET_FOTOS } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/client";
 
 // Subida de fotos desde el navegador al bucket privado. Ruta: <usuario>/<uuid>.<ext>
 // (las policies de Storage solo dejan subir a la carpeta propia).
-
-export const BUCKET_FOTOS = "ordenes-fotos";
 
 const EXTENSION: Record<string, string> = {
   "image/jpeg": "jpg",

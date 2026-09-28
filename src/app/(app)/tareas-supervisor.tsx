@@ -5,7 +5,7 @@ import { IconoAlerta, IconoCamara, IconoOk, IconoTareas } from "@/components/ico
 import type { Usuario } from "@/lib/auth";
 import { hace, momentoHaceDias } from "@/lib/fechas";
 import { conVolver, rutaCon } from "@/lib/navegacion";
-import { numeroOrden, type Prioridad } from "@/lib/ordenes";
+import { BUCKET_FOTOS, numeroOrden, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 
 type Tarea = {
@@ -66,7 +66,7 @@ export async function TareasSupervisor({ usuario, escuela }: { usuario: Usuario;
   // Miniatura: la primera foto del problema de cada tarea
   const paths = tareas.flatMap((t) => t.orden_fotos.map((f) => f.path));
   const { data: urls } = paths.length
-    ? await supabase.storage.from("ordenes-fotos").createSignedUrls(paths, 60 * 60)
+    ? await supabase.storage.from(BUCKET_FOTOS).createSignedUrls(paths, 60 * 60)
     : { data: [] };
   const miniatura = new Map((urls ?? []).map((u) => [u.path, u.signedUrl]));
 

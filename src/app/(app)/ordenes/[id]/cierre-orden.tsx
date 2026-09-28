@@ -52,33 +52,57 @@ export function CierreOrden({
   const terminar = async () => {
     if (fotoObligatoria && !fotos.length) return setError("Sacá al menos una foto del trabajo terminado.");
     setError(null);
-    let subidas: string[] = [];
+    let subidas: string[];
     try {
+      // Si falla la subida, subirFotos ya borra lo que llego a subir
       subidas = await subirFotos(
         fotos.map((f) => f.file),
         usuarioId,
         (i, n) => setProgreso(`Subiendo fotos ${i}/${n}…`),
       );
-      setProgreso("Guardando…");
-      const r = await terminarOrden(ordenId, nota, subidas);
-      if (r.error) throw new Error(r.error);
-      listo("terminada");
     } catch (e) {
-      // Las fotos quedan elegidas para reintentar; los archivos subidos se borran
-      await borrarSubidas(subidas);
-      setError(e instanceof Error ? e.message : "Algo salió mal. Probá de nuevo.");
+      setError(e instanceof Error ? e.message : "No se pudieron subir las fotos. Probá de nuevo.");
       setProgreso(null);
+      return;
     }
+
+    setProgreso("Guardando…");
+    let r: { error: string | null };
+    try {
+      r = await terminarOrden(ordenId, nota, subidas);
+    } catch {
+      // Se corto la conexion: la orden pudo haberse guardado igual. No se borran las fotos
+      // (la orden podria estar usandolas) y se recarga la pantalla para ver como quedo.
+      setError("Se cortó la conexión. Revisá si la orden quedó terminada antes de volver a intentar.");
+      setProgreso(null);
+      router.refresh();
+      return;
+    }
+    if (r.error) {
+      // La base no la cerro: las fotos subidas no quedaron en ningun lado
+      await borrarSubidas(subidas);
+      setError(r.error);
+      setProgreso(null);
+      return;
+    }
+    listo("terminada");
   };
 
   const fueraDeAlcance = async () => {
     if (!motivo.trim()) return setError("Escribí por qué no corresponde a mantenimiento.");
     setError(null);
     setProgreso("Guardando…");
-    const r = await marcarFueraDeAlcance(ordenId, motivo);
-    if (r.error) {
-      setError(r.error);
+    try {
+      const r = await marcarFueraDeAlcance(ordenId, motivo);
+      if (r.error) {
+        setError(r.error);
+        setProgreso(null);
+        return;
+      }
+    } catch {
+      setError("Se cortó la conexión. Revisá cómo quedó la orden antes de volver a intentar.");
       setProgreso(null);
+      router.refresh();
       return;
     }
     listo("fuera");

@@ -4,7 +4,7 @@ import { AppHeader, Pagina } from "@/components/app-header";
 import { getUsuario } from "@/lib/auth";
 import { hoyISO } from "@/lib/fechas";
 import { volverSeguro } from "@/lib/navegacion";
-import { numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
+import { BUCKET_FOTOS, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { createClient } from "@/lib/supabase/server";
 import { NuevaOrdenForm } from "../../nueva/nueva-orden-form";
 
@@ -50,7 +50,7 @@ export default async function EditarOrdenPage(props: PageProps<"/ordenes/[id]/ed
   if (!puedeEditar) redirect(detalle);
 
   const { data: urls } = orden.orden_fotos.length
-    ? await supabase.storage.from("ordenes-fotos").createSignedUrls(orden.orden_fotos.map((f) => f.path), 60 * 60)
+    ? await supabase.storage.from(BUCKET_FOTOS).createSignedUrls(orden.orden_fotos.map((f) => f.path), 60 * 60)
     : { data: [] };
 
   const { id: escuelaId, direccion, nombre } = orden.escuelas;

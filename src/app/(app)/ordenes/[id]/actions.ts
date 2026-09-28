@@ -2,7 +2,7 @@
 
 import { refresh, revalidatePath } from "next/cache";
 import { getUsuario } from "@/lib/auth";
-import { MAX_FOTOS, MAX_FOTOS_CIERRE, MAX_NOTA_CIERRE, validarDatosOrden } from "@/lib/ordenes";
+import { BUCKET_FOTOS, MAX_FOTOS, MAX_FOTOS_CIERRE, MAX_NOTA_CIERRE, validarDatosOrden } from "@/lib/ordenes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,7 +35,9 @@ export async function terminarOrden(ordenId: number, nota: string, fotos: string
   if (texto.length > MAX_NOTA_CIERRE) return { error: "La nota es demasiado larga." };
   if (usuario.rol === "supervisor" && !paths.length) return { error: "Sacá al menos una foto del trabajo terminado." };
   if (paths.length > MAX_FOTOS_CIERRE) return { error: `Máximo ${MAX_FOTOS_CIERRE} fotos.` };
-  if (paths.some((p) => !p.startsWith(`${usuario.id}/`))) return { error: "Fotos inválidas." };
+  // Solo "<usuario>/<nombre>.<ext>" (lo que arma subirFotos): nada de subcarpetas ni ".."
+  const valida = new RegExp(`^${usuario.id}/[A-Za-z0-9_-]+\\.(jpg|jpeg|png|webp)$`);
+  if (paths.some((p) => !valida.test(p))) return { error: "Fotos inválidas." };
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("terminar_orden", { p_id: ordenId, p_nota: texto || null, p_fotos: paths });
@@ -75,7 +77,7 @@ export async function deshacerCierre(ordenId: number): Promise<Resultado> {
   if (error) return { error: mensaje(error, "deshacerCierre") };
   // La base ya quito las fotos del cierre: borrar sus archivos
   const paths = (quitadas as string[] | null) ?? [];
-  if (paths.length) await createAdminClient().storage.from("ordenes-fotos").remove(paths);
+  if (paths.length) await createAdminClient().storage.from(BUCKET_FOTOS).remove(paths);
   refrescar(ordenId);
   return { error: null };
 }
@@ -155,7 +157,7 @@ export async function editarOrden(input: EdicionInput): Promise<Resultado> {
 
   // La base ya quito las fotos: borrar sus archivos (pueden ser de otro usuario)
   const paths = (quitadas as string[] | null) ?? [];
-  if (paths.length) await createAdminClient().storage.from("ordenes-fotos").remove(paths);
+  if (paths.length) await createAdminClient().storage.from(BUCKET_FOTOS).remove(paths);
   refrescar(input.id);
   return { error: null };
 }
@@ -177,7 +179,7 @@ export async function borrarOrden(ordenId: number): Promise<Resultado> {
 
   // La base ya autorizo el borrado: limpiar los archivos de las fotos (pueden ser de otro usuario)
   if (fotos?.length) {
-    await createAdminClient().storage.from("ordenes-fotos").remove(fotos.map((f) => f.path));
+    await createAdminClient().storage.from(BUCKET_FOTOS).remove(fotos.map((f) => f.path));
   }
   revalidatePath("/", "layout");
   return { error: null };

@@ -28,7 +28,8 @@ alter table public.ordenes_trabajo
     check (estado <> 'fuera_de_alcance' or coalesce(length(trim(nota_cierre)), 0) > 0),
   add constraint ordenes_trabajo_nota_cierre_largo check (length(nota_cierre) <= 500);
 
--- Ventana para deshacer un cierre (la app muestra 10 segundos; el resto es margen de red)
+-- Ventana para deshacer un cierre (la app muestra 10 segundos desde que carga la pantalla
+-- siguiente; el resto es margen para conexiones lentas en la calle)
 create or replace function private.es_deshacer(p_cerrada_por uuid, p_cerrada_at timestamptz)
 returns boolean
 language sql
@@ -38,7 +39,7 @@ as $$
   select auth.uid() is not null
      and p_cerrada_por = auth.uid()
      and p_cerrada_at is not null
-     and now() - p_cerrada_at <= interval '20 seconds'
+     and now() - p_cerrada_at <= interval '30 seconds'
 $$;
 
 grant execute on function private.es_deshacer(uuid, timestamptz) to authenticated;
@@ -427,7 +428,11 @@ begin
   if v_cant > 5 then
     raise exception 'Máximo 5 fotos del trabajo terminado.' using errcode = '22023';
   end if;
-  if exists (select 1 from unnest(coalesce(p_fotos, '{}')) f where f not like v_uid::text || '/%') then
+  -- Solo "<usuario>/<nombre>.<ext>" en la carpeta propia: nada de subcarpetas ni ".."
+  if exists (
+    select 1 from unnest(coalesce(p_fotos, '{}')) f
+    where f !~ ('^' || v_uid::text || '/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$')
+  ) then
     raise exception 'Fotos inválidas.' using errcode = '22023';
   end if;
   if length(p_nota) > 500 then

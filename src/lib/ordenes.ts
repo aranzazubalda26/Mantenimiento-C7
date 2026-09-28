@@ -38,6 +38,9 @@ export const LUGARES_COMUNES = [
   "Terraza",
 ];
 
+// Bucket privado de Storage con las fotos de las ordenes (problema y cierre)
+export const BUCKET_FOTOS = "ordenes-fotos";
+
 export const MAX_FOTOS = 10;
 export const MAX_FOTOS_CIERRE = 5;
 export const MAX_NOTA_CIERRE = 500;

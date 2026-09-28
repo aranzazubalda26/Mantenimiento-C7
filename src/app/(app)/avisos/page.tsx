@@ -41,7 +41,10 @@ export default async function AvisosPage() {
     .limit(LIMITE)
     .returns<Aviso[]>();
 
-  const avisos = data ?? [];
+  // Avisos de ordenes que ya no se pueden ver (RLS): no se muestran y se dan por leidos
+  const todos = data ?? [];
+  const ocultos = todos.filter((a) => a.orden_id && !a.orden).map((a) => a.id);
+  const avisos = todos.filter((a) => !(a.orden_id && !a.orden));
   const sinLeer = avisos.filter((a) => !a.leido_at).length;
   const hoy = hoyISO();
 
@@ -66,7 +69,7 @@ export default async function AvisosPage() {
           </form>
         )}
       </AppHeader>
-      <VerAvisos />
+      <VerAvisos ocultos={ocultos} />
       <Pagina>
         <div className="flex w-full max-w-[720px] flex-col gap-4">
           <div className="flex items-center justify-between gap-3 text-[13px] text-muted">
@@ -142,7 +145,7 @@ export default async function AvisosPage() {
               </section>
             ))
           )}
-          {avisos.length === LIMITE && (
+          {todos.length === LIMITE && (
             <p className="text-center text-[13px] text-muted">Se muestran los últimos {LIMITE} avisos.</p>
           )}
         </div>

@@ -6,7 +6,7 @@ import { deshacerCierre } from "@/app/(app)/ordenes/[id]/actions";
 import { conParams } from "@/lib/navegacion";
 import { numeroOrden } from "@/lib/ordenes";
 
-const SEGUNDOS = 10; // la base da un poco mas de margen (ver private.es_deshacer)
+const SEGUNDOS = 10; // la base da 30 s de margen por conexiones lentas (ver private.es_deshacer)
 
 // Aviso de abajo despues de cerrar una orden, con "Deshacer" unos segundos.
 // Lo dispara la URL: ?hecha=<id>&cierre=terminada|fuera (ver cierre-orden.tsx).
@@ -39,8 +39,13 @@ function Aviso({ ordenId, fuera }: { ordenId: number; fuera: boolean }) {
 
   const deshacer = () =>
     startTransition(async () => {
-      const r = await deshacerCierre(ordenId);
-      setFase(r.error ? "error" : "deshecha");
+      try {
+        const r = await deshacerCierre(ordenId);
+        setFase(r.error ? "error" : "deshecha");
+      } catch {
+        // Sin conexion: no se sabe si llego; el mensaje de error dice como seguir
+        setFase("error");
+      }
     });
 
   const texto =

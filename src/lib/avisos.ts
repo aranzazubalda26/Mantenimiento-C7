@@ -48,7 +48,8 @@ function cambios(detalle: Record<string, unknown> | null) {
   return frase.charAt(0).toUpperCase() + frase.slice(1);
 }
 
-// Titulo y detalle de un aviso, pensados para leerse de un vistazo en el celular
+// Titulo y detalle de un aviso, pensados para leerse de un vistazo en el celular.
+// La orden tiene que ser visible (a.orden) salvo en 'borrada', que trae sus datos en detalle.
 export function describirAviso(a: Aviso): { titulo: string; cita: string | null; extra: string | null } {
   const num = numeroOrden(a.orden?.id ?? (Number(a.detalle?.orden) || 0));
   const escuela = a.orden?.escuelas?.direccion ?? texto(a.detalle?.escuela) ?? "";

@@ -10,7 +10,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   const [{ count }, { count: avisos }] = await Promise.all([
     supabase.from("ordenes_trabajo").select("*", { count: "exact", head: true }).eq("estado", "solicitada"),
-    supabase.from("avisos").select("*", { count: "exact", head: true }).is("leido_at", null),
+    // Avisos: solo supervisor/a e inspector/a tienen campanita
+    rol === "supervisor" || rol === "inspector"
+      ? supabase.from("avisos").select("*", { count: "exact", head: true }).is("leido_at", null)
+      : Promise.resolve({ count: 0 }),
   ]);
 
   return (

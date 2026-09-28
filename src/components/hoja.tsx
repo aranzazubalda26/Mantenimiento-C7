@@ -31,7 +31,8 @@ export function Hoja({
     const antes = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const anterior = document.activeElement as HTMLElement | null;
-    panel.current?.focus();
+    // Foco en la hoja, salvo que un campo ya lo haya tomado (autoFocus: abre el teclado)
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
     const esc = (e: KeyboardEvent) => e.key === "Escape" && !bloqueada.current && cerrar.current();
     document.addEventListener("keydown", esc);
     return () => {
