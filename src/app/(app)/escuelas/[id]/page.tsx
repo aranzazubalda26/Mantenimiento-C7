@@ -28,10 +28,11 @@ const FILTROS: { valor: Estado | "todas"; texto: string }[] = [
   { valor: "todas", texto: "Todas" },
   { valor: "solicitada", texto: "Pendientes" },
   { valor: "cerrada", texto: "Terminadas" },
+  { valor: "fuera_de_alcance", texto: "Fuera de alcance" },
 ];
 
 // Orden de la lista: primero lo que falta hacer, al final lo terminado
-const ORDEN_ESTADO: Record<Estado, number> = { solicitada: 0, cerrada: 1 };
+const ORDEN_ESTADO: Record<Estado, number> = { solicitada: 0, cerrada: 1, fuera_de_alcance: 1 };
 
 export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
   const usuario = await getUsuario();

@@ -9,6 +9,7 @@ import {
 const ESTADO_CLASES: Record<Estado, string> = {
   solicitada: "bg-[#fef0c7] text-[#93370d]",
   cerrada: "bg-[#eef0f3] text-[#475467]",
+  fuera_de_alcance: "bg-[#ede9fe] text-[#5b21b6]",
 };
 
 // Orden reabierta (ver esReabierta): borde amarillo para distinguirla del resto

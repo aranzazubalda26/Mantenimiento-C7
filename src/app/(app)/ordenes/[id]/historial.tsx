@@ -1,4 +1,4 @@
-import { IconoAlerta, IconoLapiz, IconoMas, IconoOk } from "@/components/iconos";
+import { IconoAlerta, IconoLapiz, IconoMas, IconoOjo, IconoOk, IconoProhibido } from "@/components/iconos";
 import { duracion, formatFecha, formatFechaHora } from "@/lib/fechas";
 import { PRIORIDAD_LABEL, esPrioridad } from "@/lib/ordenes";
 import { nombreCompleto } from "@/lib/usuarios";
@@ -6,7 +6,7 @@ import { nombreCompleto } from "@/lib/usuarios";
 // Un registro del historial (tabla orden_eventos, la escribe la base con triggers)
 export type Evento = {
   id: number;
-  tipo: "creada" | "editada" | "terminada" | "reabierta";
+  tipo: "creada" | "editada" | "terminada" | "fuera_de_alcance" | "reabierta" | "vista";
   detalle: Record<string, unknown> | null;
   created_at: string;
   autor: { nombre: string; apellido: string } | null;
@@ -23,7 +23,9 @@ const ESTILO: Record<Evento["tipo"], { icono: React.ReactNode; clase: string; te
   creada: { icono: <IconoMas className="size-3.5" />, clase: "bg-primary-soft text-primary", texto: "Cargada" },
   editada: { icono: <IconoLapiz className="size-3.5" />, clase: "bg-[#dce8fd] text-[#1e40af]", texto: "Editada" },
   terminada: { icono: <IconoOk className="size-3.5" />, clase: "bg-[#eef0f3] text-[#475467]", texto: "Terminada" },
+  fuera_de_alcance: { icono: <IconoProhibido className="size-3.5" />, clase: "bg-[#ede9fe] text-[#5b21b6]", texto: "Fuera de alcance" },
   reabierta: { icono: <IconoAlerta className="size-3.5" />, clase: "bg-[#fee4e2] text-[#b42318]", texto: "Reabierta" },
+  vista: { icono: <IconoOjo className="size-3.5" />, clase: "bg-[#eef0f3] text-[#475467]", texto: "Vista" },
 };
 
 // Valor legible de un campo editado
@@ -80,6 +82,12 @@ export function Historial({ eventos, cargada }: { eventos: Evento[]; cargada: st
                 </p>
                 {e.tipo === "editada" && e.detalle && <Cambios detalle={e.detalle} />}
                 {e.tipo === "terminada" && <p className="mt-0.5">{duracion(cargada, e.created_at)} desde que se cargó</p>}
+                {e.tipo === "terminada" && typeof e.detalle?.nota === "string" && (
+                  <p className="mt-0.5 break-words text-foreground">Nota: “{e.detalle.nota}”</p>
+                )}
+                {e.tipo === "fuera_de_alcance" && typeof e.detalle?.motivo === "string" && (
+                  <p className="mt-0.5 break-words text-foreground">Motivo: “{e.detalle.motivo}”</p>
+                )}
                 {e.tipo === "reabierta" && typeof e.detalle?.motivo === "string" && (
                   <p className="mt-0.5 break-words text-foreground">Motivo: “{e.detalle.motivo}”</p>
                 )}

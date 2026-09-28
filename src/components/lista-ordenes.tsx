@@ -3,7 +3,7 @@ import { fechaCorta } from "@/lib/fechas";
 import { conVolver } from "@/lib/navegacion";
 import { esReabierta, numeroOrden, type Estado, type Prioridad } from "@/lib/ordenes";
 import { nombreCompleto } from "@/lib/usuarios";
-import { BORDE_REABIERTA, PrioridadBadge } from "./badges";
+import { BORDE_REABIERTA, EstadoBadge, PrioridadBadge } from "./badges";
 
 export type OrdenLista = {
   id: number;
@@ -26,7 +26,7 @@ function iniciales(p: { nombre: string; apellido: string } | null) {
 // Sin columna de estado: con solo dos estados, el filtro ya dice cual se esta viendo.
 // Las reabiertas llevan un borde amarillo hasta que se vuelven a terminar.
 //   `sinEscuela`: en la pantalla de una escuela no se repite la escuela en cada fila.
-//   `marcarTerminadas`: en listas que mezclan estados, marca las terminadas con una etiqueta.
+//   `marcarTerminadas`: en listas que mezclan estados, marca las terminadas y fuera de alcance con una etiqueta.
 //   `origen`: ruta actual (con filtros); la orden la usa para "Volver a …".
 export function ListaOrdenes({
   ordenes,
@@ -86,11 +86,7 @@ export function ListaOrdenes({
                     {(o.prioridad === "urgente" || o.prioridad === "alta") && (
                       <PrioridadBadge prioridad={o.prioridad} />
                     )}
-                    {marcarTerminadas && o.estado === "cerrada" && (
-                      <span className="inline-flex h-[22px] items-center rounded-full bg-[#eef0f3] px-2 text-xs font-semibold text-[#475467]">
-                        Terminada
-                      </span>
-                    )}
+                    {marcarTerminadas && o.estado !== "solicitada" && <EstadoBadge estado={o.estado} chico />}
                   </span>
                 </div>
                 {!sinEscuela && (

@@ -34,6 +34,8 @@ export default async function EditarOrdenPage(props: PageProps<"/ordenes/[id]/ed
       "id, fecha, descripcion, prioridad, estado, ubicacion, escuelas(id, direccion, nombre, inspector_id), orden_fotos(id, path)",
     )
     .eq("id", Number(id))
+    // Solo las fotos del problema: las del trabajo terminado no se editan
+    .eq("orden_fotos.tipo", "problema")
     .order("id", { referencedTable: "orden_fotos" })
     .maybeSingle<Orden>();
   if (!orden?.escuelas) notFound();

@@ -148,3 +148,31 @@ export const IconoFlecha = (p: Props) => (
     <path d="M9 6l6 6-6 6" strokeWidth="2" />
   </Svg>
 );
+
+export const IconoOjo = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+    <circle cx="12" cy="12" r="2.8" />
+  </Svg>
+);
+
+export const IconoProhibido = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M6 6l12 12" />
+  </Svg>
+);
+
+export const IconoCampana = (p: Props) => (
+  <Svg {...p}>
+    <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z" />
+    <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
+  </Svg>
+);
+
+export const IconoMapa = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9 4.5l-5 2v13l5-2 6 2 5-2v-13l-5 2-6-2z" />
+    <path d="M9 4.5v13M15 6.5v13" />
+  </Svg>
+);

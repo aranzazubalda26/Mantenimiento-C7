@@ -27,7 +27,7 @@ export function TarjetaEscuela({
   ordenes: OrdenResumida[]; // todas las ordenes de esta escuela
 }) {
   const pendientes = ordenes
-    .filter((o) => o.estado !== "cerrada")
+    .filter((o) => o.estado === "solicitada")
     // Lo mas urgente primero; a igual prioridad, lo mas viejo primero
     .sort(
       (a, b) =>

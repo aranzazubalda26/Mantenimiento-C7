@@ -10,14 +10,16 @@ export const PRIORIDAD_LABEL: Record<Prioridad, string> = {
   urgente: "Urgente",
 };
 
-// solicitada -> cerrada. En la app se muestran como "Pendiente" y "Terminada"
-// (la marca el supervisor; la base guarda cuando y quien)
-export const ESTADOS = ["solicitada", "cerrada"] as const;
+// solicitada -> cerrada | fuera_de_alcance. En la app: "Pendiente", "Terminada" y
+// "Fuera de alcance" (obra que se factura aparte). Las cierra el supervisor/a; la base
+// guarda cuando y quien (cerrada_at / cerrada_por) y la nota o el motivo (nota_cierre).
+export const ESTADOS = ["solicitada", "cerrada", "fuera_de_alcance"] as const;
 export type Estado = (typeof ESTADOS)[number];
 
 export const ESTADO_LABEL: Record<Estado, string> = {
   solicitada: "Pendiente",
   cerrada: "Terminada",
+  fuera_de_alcance: "Fuera de alcance",
 };
 
 // Sugerencias para "Dónde, dentro de la escuela" (se puede escribir cualquier otra cosa)
@@ -37,6 +39,8 @@ export const LUGARES_COMUNES = [
 ];
 
 export const MAX_FOTOS = 10;
+export const MAX_FOTOS_CIERRE = 5;
+export const MAX_NOTA_CIERRE = 500;
 export const MAX_DESCRIPCION = 2000;
 export const MAX_UBICACION = 200;
 

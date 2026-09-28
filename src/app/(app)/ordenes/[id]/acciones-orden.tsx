@@ -132,7 +132,7 @@ export function AccionesOrden({
     );
   }
 
-  if (estado === "cerrada") {
+  if (estado !== "solicitada") {
     if (!puedeReabrir) return null;
     return (
       <button type="button" onClick={() => setModo("reabrir")} className="btn-secondary min-h-[50px] w-full text-[#b42318]">
