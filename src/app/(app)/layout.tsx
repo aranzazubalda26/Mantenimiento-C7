@@ -4,17 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 
 // Layout de todas las pantallas con sesion (el login queda afuera del grupo)
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { nombre, apellido, email, rol } = await getUsuario();
+  const { id, nombre, apellido, email, rol } = await getUsuario();
 
-  // Contador del menu: ordenes pendientes que el usuario puede ver (RLS)
+  // Contadores del menu: ordenes pendientes que el usuario puede ver (RLS) y avisos sin leer
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("ordenes_trabajo")
-    .select("*", { count: "exact", head: true })
-    .eq("estado", "solicitada");
+  const [{ count }, { count: avisos }] = await Promise.all([
+    supabase.from("ordenes_trabajo").select("*", { count: "exact", head: true }).eq("estado", "solicitada"),
+    supabase.from("avisos").select("*", { count: "exact", head: true }).is("leido_at", null),
+  ]);
 
   return (
-    <Shell usuario={{ nombre, apellido, email, rol }} pendientes={count ?? 0}>
+    <Shell usuario={{ id, nombre, apellido, email, rol }} pendientes={count ?? 0} avisos={avisos ?? 0}>
       {children}
     </Shell>
   );

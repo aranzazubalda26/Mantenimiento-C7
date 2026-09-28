@@ -6,9 +6,23 @@ import { createContext, Suspense, useContext, useEffect, useRef, useState } from
 import { logout } from "@/app/login/actions";
 import { ROL_LABEL, type Rol } from "@/lib/usuarios";
 import { AvisoDeshacer } from "./aviso-deshacer";
-import { IconoEscuela, IconoGente, IconoInicio, IconoLlave, IconoMas, IconoOk, IconoSalir, IconoTareas } from "./iconos";
+import { useAvisosSinLeer } from "./contador-avisos";
+import {
+  IconoCampana,
+  IconoEscuela,
+  IconoGente,
+  IconoInicio,
+  IconoLlave,
+  IconoMas,
+  IconoOk,
+  IconoSalir,
+  IconoTareas,
+} from "./iconos";
 
-type UsuarioShell = { nombre: string; apellido: string; email: string; rol: Rol | null };
+type UsuarioShell = { id: string; nombre: string; apellido: string; email: string; rol: Rol | null };
+
+// Quienes tienen campanita: el supervisor/a y el inspector/a (se avisan entre ellos)
+const conAvisos = (rol: Rol | null) => rol === "supervisor" || rol === "inspector";
 
 const ShellContext = createContext<{ usuario: UsuarioShell } | null>(null);
 
@@ -21,24 +35,27 @@ const SIN_BARRA = [/^\/ordenes\/nueva$/, /^\/ordenes\/\d+\/editar$/];
 export function Shell({
   usuario,
   pendientes,
+  avisos: avisosIniciales,
   children,
 }: {
   usuario: UsuarioShell;
   pendientes: number;
+  avisos: number; // sin leer, segun el servidor
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const conBarra = !SIN_BARRA.some((r) => r.test(pathname));
+  const avisos = useAvisosSinLeer(avisosIniciales, usuario.id, conAvisos(usuario.rol));
 
   return (
     <ShellContext.Provider value={{ usuario }}>
       <div className="min-h-dvh pc:grid pc:grid-cols-[264px_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden h-dvh overflow-y-auto border-r border-border bg-surface pc:block">
-          <Lateral usuario={usuario} pendientes={pendientes} pathname={pathname} />
+          <Lateral usuario={usuario} pendientes={pendientes} avisos={avisos} pathname={pathname} />
         </aside>
         <div className="flex min-h-dvh min-w-0 flex-col">{children}</div>
       </div>
-      {conBarra && <BarraInferior rol={usuario.rol} pendientes={pendientes} pathname={pathname} />}
+      {conBarra && <BarraInferior rol={usuario.rol} pendientes={pendientes} avisos={avisos} pathname={pathname} />}
       {/* "Orden terminada · Deshacer" despues de cerrar una orden (lo dispara la URL) */}
       <Suspense>
         <AvisoDeshacer />
@@ -52,19 +69,40 @@ const activaTareas = (p: string) => p === "/" || /^\/ordenes\/\d+/.test(p);
 const activaEscuelas = (p: string) => p.startsWith("/escuelas");
 const activaHechas = (p: string) => p === "/ordenes";
 
-function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendientes: number; pathname: string }) {
+function BarraInferior({
+  rol,
+  pendientes,
+  avisos,
+  pathname,
+}: {
+  rol: Rol | null;
+  pendientes: number;
+  avisos: number;
+  pathname: string;
+}) {
   if (!rol) return null;
+  const campana = (
+    <Tab
+      href="/avisos"
+      texto="Avisos"
+      activo={pathname === "/avisos"}
+      icono={<IconoCampana className="size-6" />}
+      contador={avisos}
+      etiqueta={`Avisos${avisos ? `, ${avisos} sin leer` : ""}`}
+    />
+  );
   if (rol === "supervisor") {
-    // Supervisor/a: Tareas, Escuelas, Hechas
+    // Supervisor/a: Tareas, Escuelas, Hechas y la campanita a la derecha
     return (
       <nav
         aria-label="Navegación principal"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md pc:hidden"
       >
-        <div className="mx-auto grid h-16 max-w-md grid-cols-3 items-center">
+        <div className="mx-auto grid h-16 max-w-md grid-cols-4 items-center">
           <Tab href="/" texto="Tareas" activo={activaTareas(pathname)} icono={<IconoTareas className="size-6" />} contador={pendientes} />
           <Tab href="/escuelas" texto="Escuelas" activo={activaEscuelas(pathname)} icono={<IconoEscuela className="size-6" />} />
           <Tab href="/ordenes?ver=terminadas" texto="Hechas" activo={activaHechas(pathname)} icono={<IconoOk className="size-6" />} />
+          {campana}
         </div>
       </nav>
     );
@@ -97,8 +135,10 @@ function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendien
     </Link>
   );
 
-  // Admin: Inicio, Ordenes, [+], Escuelas, Usuarios. Inspector: Inicio, [+], Ordenes.
-  const columnas = esAdmin ? "grid-cols-5" : puedeCrear ? "grid-cols-3" : "grid-cols-2";
+  // Admin: Inicio, Ordenes, [+], Escuelas, Usuarios.
+  // Inspector/a: Inicio, Ordenes, [+], (lugar libre), Avisos. El [+] queda en el centro; el
+  // cuarto lugar queda reservado para una pantalla que se sume despues (asi queda simetrico).
+  const columnas = esAdmin || puedeCrear ? "grid-cols-5" : "grid-cols-2";
 
   return (
     <nav
@@ -117,8 +157,10 @@ function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendien
         ) : (
           <>
             {inicio}
-            {nueva}
             {ordenes}
+            {nueva}
+            <span aria-hidden />
+            {campana}
           </>
         )}
       </div>
@@ -132,17 +174,20 @@ function Tab({
   activo,
   icono,
   contador,
+  etiqueta,
 }: {
   href: string;
   texto: string;
   activo: boolean;
   icono: React.ReactNode;
   contador?: number;
+  etiqueta?: string; // texto para lectores de pantalla, si el visible no alcanza
 }) {
   return (
     <Link
       href={href}
       aria-current={activo ? "page" : undefined}
+      aria-label={etiqueta}
       className={`flex h-full flex-col items-center justify-center gap-1 text-[11.5px] font-semibold transition-colors ${
         activo ? "text-primary" : "text-muted"
       }`}
@@ -222,7 +267,7 @@ type Item = {
   label: string;
   icono: React.ReactNode;
   roles: Rol[];
-  contador?: boolean;
+  contador?: "pendientes" | "avisos";
   activa: (pathname: string) => boolean; // en que pantallas queda marcada
 };
 type Seccion = { titulo: string; items: Item[] };
@@ -233,10 +278,11 @@ const SECCIONES: Seccion[] = [
     titulo: "Órdenes",
     items: [
       { href: "/", label: "Inicio", icono: <IconoInicio />, roles: ["admin", "inspector"], activa: (p) => p === "/" || p.startsWith("/escuelas/") },
-      { href: "/ordenes", label: "Órdenes", icono: <IconoTareas />, roles: ["admin", "inspector"], contador: true, activa: (p) => p === "/ordenes" || /^\/ordenes\/\d+/.test(p) },
-      { href: "/", label: "Tareas", icono: <IconoTareas />, roles: ["supervisor"], contador: true, activa: activaTareas },
+      { href: "/ordenes", label: "Órdenes", icono: <IconoTareas />, roles: ["admin", "inspector"], contador: "pendientes", activa: (p) => p === "/ordenes" || /^\/ordenes\/\d+/.test(p) },
+      { href: "/", label: "Tareas", icono: <IconoTareas />, roles: ["supervisor"], contador: "pendientes", activa: activaTareas },
       { href: "/escuelas", label: "Escuelas", icono: <IconoEscuela />, roles: ["supervisor"], activa: activaEscuelas },
       { href: "/ordenes?ver=terminadas", label: "Hechas", icono: <IconoOk />, roles: ["supervisor"], activa: activaHechas },
+      { href: "/avisos", label: "Avisos", icono: <IconoCampana />, roles: ["supervisor", "inspector"], contador: "avisos", activa: (p) => p === "/avisos" },
       { href: "/ordenes/nueva", label: "Nueva orden", icono: <IconoMas />, roles: ["admin", "inspector"], activa: (p) => p === "/ordenes/nueva" },
     ],
   },
@@ -249,7 +295,17 @@ const SECCIONES: Seccion[] = [
   },
 ];
 
-function Lateral({ usuario, pendientes, pathname }: { usuario: UsuarioShell; pendientes: number; pathname: string }) {
+function Lateral({
+  usuario,
+  pendientes,
+  avisos,
+  pathname,
+}: {
+  usuario: UsuarioShell;
+  pendientes: number;
+  avisos: number;
+  pathname: string;
+}) {
   const rol = usuario.rol;
   const secciones = SECCIONES.map((s) => ({ ...s, items: s.items.filter((i) => rol && i.roles.includes(rol)) })).filter(
     (s) => s.items.length > 0,
@@ -270,6 +326,7 @@ function Lateral({ usuario, pendientes, pathname }: { usuario: UsuarioShell; pen
           <ul className="flex flex-col gap-0.5">
             {s.items.map((item) => {
               const activo = item.activa(pathname);
+              const n = item.contador === "avisos" ? avisos : item.contador === "pendientes" ? pendientes : 0;
               return (
                 <li key={item.label}>
                   <Link
@@ -281,14 +338,18 @@ function Lateral({ usuario, pendientes, pathname }: { usuario: UsuarioShell; pen
                   >
                     {item.icono}
                     {item.label}
-                    {item.contador && pendientes > 0 && (
+                    {n > 0 && (
                       <span
-                        title="Órdenes pendientes"
+                        title={item.contador === "avisos" ? "Avisos sin leer" : "Órdenes pendientes"}
                         className={`ml-auto grid h-[22px] min-w-[22px] place-items-center rounded-full px-[7px] text-xs font-semibold ${
-                          activo ? "bg-white text-primary" : "bg-background text-muted"
+                          item.contador === "avisos"
+                            ? "bg-danger text-white"
+                            : activo
+                              ? "bg-white text-primary"
+                              : "bg-background text-muted"
                         }`}
                       >
-                        {pendientes}
+                        {n}
                       </span>
                     )}
                   </Link>

@@ -94,3 +94,8 @@ export function hace(ts: string) {
   if (delta === 1) return "ayer";
   return `hace ${delta} días`;
 }
+
+// Dia (YYYY-MM-DD) de un momento, en hora de Argentina
+export function diaDe(ts: string) {
+  return new Date(ts).toLocaleDateString("en-CA", { timeZone: TZ });
+}
