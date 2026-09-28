@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { IconoOk } from "@/components/iconos";
 import { ErrorMsg } from "@/components/ui";
 import type { Estado } from "@/lib/ordenes";
-import { borrarOrden, reabrirOrden, terminarOrden } from "./actions";
+import { borrarOrden, reabrirOrden } from "./actions";
 
 // Botones de la orden segun quien la mira (la base vuelve a controlar todo):
-//   pendiente: supervisor/a "Marcar como terminada"; inspector/a y admin "Editar" y "Borrar"
-//   terminada: inspector/a "Objetar y reabrir" (con motivo)
+//   pendiente: inspector/a y admin "Editar" y "Borrar" (terminar o fuera de alcance: ver cierre-orden.tsx)
+//   terminada o fuera de alcance: inspector/a "Objetar y reabrir" (con motivo)
 // Las acciones delicadas piden confirmacion: en la obra es facil tocar sin querer.
 
 // Margen para que un panel no quede debajo de la barra de abajo del celular
@@ -19,7 +18,6 @@ const PANEL = "scroll-mb-[calc(96px+env(safe-area-inset-bottom))] pc:scroll-mb-6
 export function AccionesOrden({
   ordenId,
   estado,
-  puedeTerminar,
   puedeEditar,
   puedeReabrir,
   hrefEditar,
@@ -27,14 +25,13 @@ export function AccionesOrden({
 }: {
   ordenId: number;
   estado: Estado;
-  puedeTerminar: boolean;
   puedeEditar: boolean;
   puedeReabrir: boolean;
   hrefEditar: string;
   hrefTrasBorrar: string;
 }) {
   const router = useRouter();
-  const [modo, setModo] = useState<"botones" | "terminar" | "borrar" | "reabrir">("botones");
+  const [modo, setModo] = useState<"botones" | "borrar" | "reabrir">("botones");
   const [motivo, setMotivo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -45,7 +42,7 @@ export function AccionesOrden({
     if (modo !== "botones") panel.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [modo]);
 
-  const ejecutar =(accion: () => Promise<{ error: string | null }>, alTerminar?: () => void) =>
+  const ejecutar = (accion: () => Promise<{ error: string | null }>, alTerminar?: () => void) =>
     startTransition(async () => {
       const r = await accion();
       setError(r.error);
@@ -60,21 +57,6 @@ export function AccionesOrden({
     setModo("botones");
     setError(null);
   };
-
-  if (modo === "terminar") {
-    return (
-      <Confirmar
-        ref={panel}
-        titulo="¿Marcar la orden como terminada?"
-        texto="Queda registrada la fecha y hora de ahora."
-        boton="Sí, terminada"
-        pending={pending}
-        error={error}
-        onCancelar={cancelar}
-        onConfirmar={() => ejecutar(() => terminarOrden(ordenId))}
-      />
-    );
-  }
 
   if (modo === "borrar") {
     return (
@@ -112,7 +94,7 @@ export function AccionesOrden({
           className="input min-h-[84px] resize-y py-3 leading-normal"
         />
         <p className="-mt-1 text-[13px] text-muted">
-          La orden vuelve a Pendiente y el motivo queda a la vista hasta que se vuelva a terminar.
+          La orden vuelve a Pendiente y el motivo queda a la vista hasta que se vuelva a cerrar.
         </p>
         {error && <ErrorMsg mensaje={error} />}
         <div className="flex gap-2.5 *:flex-1">
@@ -141,25 +123,15 @@ export function AccionesOrden({
     );
   }
 
-  if (!puedeTerminar && !puedeEditar) return null;
+  if (!puedeEditar) return null;
   return (
-    <div className="flex flex-col gap-2.5">
-      {puedeTerminar && (
-        <button type="button" onClick={() => setModo("terminar")} className="btn-primary min-h-[50px] w-full">
-          <IconoOk className="size-[18px]" />
-          Marcar como terminada
-        </button>
-      )}
-      {puedeEditar && (
-        <div className="flex gap-2.5 *:flex-1">
-          <Link href={hrefEditar} className="btn-secondary min-h-[48px]">
-            Editar
-          </Link>
-          <button type="button" onClick={() => setModo("borrar")} className="btn-secondary min-h-[48px] text-danger">
-            Borrar
-          </button>
-        </div>
-      )}
+    <div className="flex gap-2.5 *:flex-1">
+      <Link href={hrefEditar} className="btn-secondary min-h-[48px]">
+        Editar
+      </Link>
+      <button type="button" onClick={() => setModo("borrar")} className="btn-secondary min-h-[48px] text-danger">
+        Borrar
+      </button>
     </div>
   );
 }

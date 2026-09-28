@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, Suspense, useContext, useEffect, useRef, useState } from "react";
 import { logout } from "@/app/login/actions";
 import { ROL_LABEL, type Rol } from "@/lib/usuarios";
-import { IconoEscuela, IconoGente, IconoInicio, IconoLlave, IconoMas, IconoSalir, IconoTareas } from "./iconos";
+import { AvisoDeshacer } from "./aviso-deshacer";
+import { IconoEscuela, IconoGente, IconoInicio, IconoLlave, IconoMas, IconoOk, IconoSalir, IconoTareas } from "./iconos";
 
 type UsuarioShell = { nombre: string; apellido: string; email: string; rol: Rol | null };
 
@@ -38,12 +39,36 @@ export function Shell({
         <div className="flex min-h-dvh min-w-0 flex-col">{children}</div>
       </div>
       {conBarra && <BarraInferior rol={usuario.rol} pendientes={pendientes} pathname={pathname} />}
+      {/* "Orden terminada · Deshacer" despues de cerrar una orden (lo dispara la URL) */}
+      <Suspense>
+        <AvisoDeshacer />
+      </Suspense>
     </ShellContext.Provider>
   );
 }
 
+// Pantallas marcadas en el menu del supervisor/a (celular y PC)
+const activaTareas = (p: string) => p === "/" || /^\/ordenes\/\d+/.test(p);
+const activaEscuelas = (p: string) => p.startsWith("/escuelas");
+const activaHechas = (p: string) => p === "/ordenes";
+
 function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendientes: number; pathname: string }) {
   if (!rol) return null;
+  if (rol === "supervisor") {
+    // Supervisor/a: Tareas, Escuelas, Hechas
+    return (
+      <nav
+        aria-label="Navegación principal"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md pc:hidden"
+      >
+        <div className="mx-auto grid h-16 max-w-md grid-cols-3 items-center">
+          <Tab href="/" texto="Tareas" activo={activaTareas(pathname)} icono={<IconoTareas className="size-6" />} contador={pendientes} />
+          <Tab href="/escuelas" texto="Escuelas" activo={activaEscuelas(pathname)} icono={<IconoEscuela className="size-6" />} />
+          <Tab href="/ordenes?ver=terminadas" texto="Hechas" activo={activaHechas(pathname)} icono={<IconoOk className="size-6" />} />
+        </div>
+      </nav>
+    );
+  }
   const puedeCrear = rol === "admin" || rol === "inspector";
   const esAdmin = rol === "admin";
 
@@ -72,7 +97,7 @@ function BarraInferior({ rol, pendientes, pathname }: { rol: Rol | null; pendien
     </Link>
   );
 
-  // Admin: Inicio, Ordenes, [+], Escuelas, Usuarios. Inspector: Inicio, [+], Ordenes. Supervisor: Inicio, Ordenes.
+  // Admin: Inicio, Ordenes, [+], Escuelas, Usuarios. Inspector: Inicio, [+], Ordenes.
   const columnas = esAdmin ? "grid-cols-5" : puedeCrear ? "grid-cols-3" : "grid-cols-2";
 
   return (
@@ -207,8 +232,11 @@ const SECCIONES: Seccion[] = [
   {
     titulo: "Órdenes",
     items: [
-      { href: "/", label: "Inicio", icono: <IconoInicio />, roles: ["admin", "supervisor", "inspector"], activa: (p) => p === "/" || p.startsWith("/escuelas/") },
-      { href: "/ordenes", label: "Órdenes", icono: <IconoTareas />, roles: ["admin", "supervisor", "inspector"], contador: true, activa: (p) => p === "/ordenes" || /^\/ordenes\/\d+/.test(p) },
+      { href: "/", label: "Inicio", icono: <IconoInicio />, roles: ["admin", "inspector"], activa: (p) => p === "/" || p.startsWith("/escuelas/") },
+      { href: "/ordenes", label: "Órdenes", icono: <IconoTareas />, roles: ["admin", "inspector"], contador: true, activa: (p) => p === "/ordenes" || /^\/ordenes\/\d+/.test(p) },
+      { href: "/", label: "Tareas", icono: <IconoTareas />, roles: ["supervisor"], contador: true, activa: activaTareas },
+      { href: "/escuelas", label: "Escuelas", icono: <IconoEscuela />, roles: ["supervisor"], activa: activaEscuelas },
+      { href: "/ordenes?ver=terminadas", label: "Hechas", icono: <IconoOk />, roles: ["supervisor"], activa: activaHechas },
       { href: "/ordenes/nueva", label: "Nueva orden", icono: <IconoMas />, roles: ["admin", "inspector"], activa: (p) => p === "/ordenes/nueva" },
     ],
   },
@@ -243,7 +271,7 @@ function Lateral({ usuario, pendientes, pathname }: { usuario: UsuarioShell; pen
             {s.items.map((item) => {
               const activo = item.activa(pathname);
               return (
-                <li key={item.href}>
+                <li key={item.label}>
                   <Link
                     href={item.href}
                     aria-current={activo ? "page" : undefined}

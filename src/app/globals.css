@@ -143,3 +143,13 @@ body {
     @apply grid size-[38px] shrink-0 place-items-center rounded-full bg-[#dde7f0] text-sm font-semibold text-[#1d3b5a];
   }
 }
+
+/* Barra que se vacia en el aviso de "Deshacer" */
+@keyframes vaciar {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}

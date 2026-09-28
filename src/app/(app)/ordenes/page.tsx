@@ -11,12 +11,13 @@ import { FiltrosOrdenes } from "./filtros";
 
 export const metadata: Metadata = { title: "Órdenes · Mantenimiento C7" };
 
-type Vista = "pendientes" | "terminadas" | "todas";
+type Vista = "pendientes" | "terminadas" | "fuera" | "todas";
 type Orden = OrdenLista & { created_at: string; cerrada_at: string | null };
 
 const VISTAS: { valor: Vista; texto: string }[] = [
   { valor: "pendientes", texto: "Pendientes" },
   { valor: "terminadas", texto: "Terminadas" },
+  { valor: "fuera", texto: "Fuera de alcance" },
   { valor: "todas", texto: "Todas" },
 ];
 
@@ -27,7 +28,7 @@ const LIMITE = 300; // terminadas y todas: las mas recientes
 export default async function OrdenesPage(props: PageProps<"/ordenes">) {
   const usuario = await getUsuario();
   const { ver, escuela, fecha } = await props.searchParams;
-  const vista: Vista = ver === "terminadas" || ver === "todas" ? ver : "pendientes";
+  const vista: Vista = ver === "terminadas" || ver === "fuera" || ver === "todas" ? ver : "pendientes";
 
   // Filtros opcionales: escuela (numero) y fecha de la orden (hoy / ultimos 7 / ultimos 30 dias)
   const escuelaId = typeof escuela === "string" && /^\d+$/.test(escuela) ? Number(escuela) : null;
@@ -51,6 +52,7 @@ export default async function OrdenesPage(props: PageProps<"/ordenes">) {
   if (desde) query = query.gte("fecha", desde);
   if (vista === "pendientes") query = query.eq("estado", "solicitada");
   if (vista === "terminadas") query = query.eq("estado", "cerrada").order("cerrada_at", { ascending: false });
+  if (vista === "fuera") query = query.eq("estado", "fuera_de_alcance").order("cerrada_at", { ascending: false });
   if (vista !== "pendientes") query = query.order("created_at", { ascending: false }).limit(LIMITE);
 
   let qPendientes = supabase.from("ordenes_trabajo").select("*", { count: "exact", head: true }).eq("estado", "solicitada");
@@ -130,7 +132,9 @@ export default async function OrdenesPage(props: PageProps<"/ordenes">) {
               ? "No hay órdenes con estos filtros."
               : vista === "pendientes"
                 ? "No hay órdenes pendientes."
-                : "No hay órdenes para mostrar."
+                : vista === "fuera"
+                  ? "No hay órdenes fuera de alcance."
+                  : "No hay órdenes para mostrar."
           }
         />
       </Pagina>

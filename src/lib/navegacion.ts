@@ -23,3 +23,24 @@ export function rutaCon(ruta: string, params: Record<string, string | null | und
   const texto = qs.toString();
   return texto ? `${ruta}?${texto}` : ruta;
 }
+
+// Agrega (o quita, con null) parametros a una ruta que ya puede tener los suyos:
+// conParams("/ordenes?ver=todas", { hecha: "12" }) -> "/ordenes?ver=todas&hecha=12"
+export function conParams(href: string, params: Record<string, string | null>) {
+  const [ruta, query = ""] = href.split("?");
+  const qs = new URLSearchParams(query);
+  for (const [k, v] of Object.entries(params)) {
+    if (v === null) qs.delete(k);
+    else qs.set(k, v);
+  }
+  const texto = qs.toString();
+  return texto ? `${ruta}?${texto}` : ruta;
+}
+
+// Ciudad de las escuelas: se suma a la direccion para que el mapa no la busque en otro lado
+const CIUDAD_ESCUELAS = "Ciudad Autónoma de Buenos Aires";
+
+// "Cómo llegar": abre Google Maps (la app en el celular) con la direccion de la escuela
+export function linkMapa(direccion: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${direccion}, ${CIUDAD_ESCUELAS}`)}`;
+}

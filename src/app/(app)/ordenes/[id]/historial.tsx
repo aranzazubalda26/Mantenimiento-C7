@@ -62,7 +62,17 @@ function Cambios({ detalle }: { detalle: Record<string, unknown> }) {
 // Historial de la orden: quien hizo que y cuando (lo ven todos los que ven la orden).
 // Es el unico lugar con esos datos: el resto de la pantalla no los repite.
 //   `cargada`: created_at de la orden, para "N desde que se cargó" al terminarla
-export function Historial({ eventos, cargada }: { eventos: Evento[]; cargada: string }) {
+//   `cierreActual`: cerrada_at si esta cerrada; la nota o el motivo de ese cierre ya se
+//   muestran arriba, junto a las fotos, y aca no se repiten
+export function Historial({
+  eventos,
+  cargada,
+  cierreActual,
+}: {
+  eventos: Evento[];
+  cargada: string;
+  cierreActual: string | null;
+}) {
   if (!eventos.length) return null;
   return (
     <div>
@@ -70,6 +80,7 @@ export function Historial({ eventos, cargada }: { eventos: Evento[]; cargada: st
       <ol className="flex flex-col">
         {eventos.map((e, i) => {
           const estilo = ESTILO[e.tipo];
+          const arriba = e.created_at === cierreActual;
           return (
             <li key={e.id} className="relative flex gap-3 pb-3.5 last:pb-0">
               {/* linea que une los eventos */}
@@ -82,10 +93,10 @@ export function Historial({ eventos, cargada }: { eventos: Evento[]; cargada: st
                 </p>
                 {e.tipo === "editada" && e.detalle && <Cambios detalle={e.detalle} />}
                 {e.tipo === "terminada" && <p className="mt-0.5">{duracion(cargada, e.created_at)} desde que se cargó</p>}
-                {e.tipo === "terminada" && typeof e.detalle?.nota === "string" && (
+                {e.tipo === "terminada" && !arriba && typeof e.detalle?.nota === "string" && (
                   <p className="mt-0.5 break-words text-foreground">Nota: “{e.detalle.nota}”</p>
                 )}
-                {e.tipo === "fuera_de_alcance" && typeof e.detalle?.motivo === "string" && (
+                {e.tipo === "fuera_de_alcance" && !arriba && typeof e.detalle?.motivo === "string" && (
                   <p className="mt-0.5 break-words text-foreground">Motivo: “{e.detalle.motivo}”</p>
                 )}
                 {e.tipo === "reabierta" && typeof e.detalle?.motivo === "string" && (

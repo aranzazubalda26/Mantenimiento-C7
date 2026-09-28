@@ -85,7 +85,8 @@ export default async function EscuelaPage(props: PageProps<"/escuelas/[id]">) {
       </AppHeader>
 
       <Pagina>
-        <Volver href="/" a="inicio" />
+        {/* El supervisor/a tiene las escuelas en su propia pestaña */}
+        {usuario.rol === "supervisor" ? <Volver href="/escuelas" a="mis escuelas" /> : <Volver href="/" a="inicio" />}
 
         {/* Celular: datos de la escuela arriba y el equipo abajo; PC: todo en una fila */}
         <section className="tarjeta flex flex-col gap-3 p-4 pc:flex-row pc:items-center pc:gap-6 pc:px-5">

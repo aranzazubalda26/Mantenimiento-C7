@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { EscuelaSelect, type EscuelaOpcion } from "@/components/escuela-select";
-import { FotosInput, idUnico, type FotoLocal } from "@/components/fotos-input";
+import { FotosInput, type FotoLocal } from "@/components/fotos-input";
 import { Bloque, Campo, ErrorMsg, PieForm } from "@/components/ui";
-import { comprimirImagen } from "@/lib/comprimir-imagen";
 import {
   LUGARES_COMUNES,
   MAX_DESCRIPCION,
@@ -16,17 +15,9 @@ import {
   PRIORIDAD_LABEL,
   type Prioridad,
 } from "@/lib/ordenes";
-import { createClient } from "@/lib/supabase/client";
+import { borrarSubidas, subirFotos } from "@/lib/subir-fotos";
 import { editarOrden } from "../[id]/actions";
 import { crearOrden } from "./actions";
-
-const BUCKET = "ordenes-fotos";
-
-const EXTENSION: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 // Datos de una orden existente: el mismo formulario sirve para editarla
 export type Edicion = {
@@ -137,22 +128,13 @@ export function NuevaOrdenForm({
     if (falta) return setError(falta);
     setError(null);
 
-    const supabase = createClient();
-    const subidas: string[] = [];
+    let subidas: string[] = [];
     try {
-      for (const [i, foto] of fotos.entries()) {
-        setProgreso(`Subiendo fotos ${i + 1}/${fotos.length}…`);
-        const blob = await comprimirImagen(foto.file);
-        const path = `${usuarioId}/${idUnico()}.${EXTENSION[blob.type] ?? "jpg"}`;
-        const { error: errSubida } = await supabase.storage
-          .from(BUCKET)
-          .upload(path, blob, { contentType: blob.type || "image/jpeg" });
-        if (errSubida) {
-          console.error(errSubida);
-          throw new Error("No se pudo subir una foto. Revisá la conexión y probá de nuevo.");
-        }
-        subidas.push(path);
-      }
+      subidas = await subirFotos(
+        fotos.map((f) => f.file),
+        usuarioId,
+        (i, n) => setProgreso(`Subiendo fotos ${i}/${n}…`),
+      );
 
       setProgreso(edicion ? "Guardando cambios…" : "Guardando orden…");
       if (edicion) {
@@ -185,7 +167,7 @@ export function NuevaOrdenForm({
       setError(e instanceof Error ? e.message : "Algo salió mal. Probá de nuevo.");
       setProgreso(null);
       // No dejar fotos huerfanas en Storage si la orden no se creo
-      if (subidas.length) await supabase.storage.from(BUCKET).remove(subidas);
+      await borrarSubidas(subidas);
     }
   };
 

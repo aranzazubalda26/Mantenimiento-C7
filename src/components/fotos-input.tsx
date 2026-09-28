@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { idUnico } from "@/lib/subir-fotos";
 import { IconoCamara, IconoX } from "./iconos";
 
 export type FotoLocal = { id: string; file: File; url: string };
-
-export function idUnico() {
-  // randomUUID solo existe en contexto seguro (https/localhost); en el celular por la red local no
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 // Miniaturas + recuadro para sumar fotos. Sin `capture` para que el
 // celular ofrezca elegir entre camara y galeria.
@@ -19,11 +13,15 @@ export function FotosInput({
   onChange,
   max,
   disabled,
+  titulo,
+  ayuda = "Así saben qué buscar cuando llegan",
 }: {
   fotos: FotoLocal[];
   onChange: (fotos: FotoLocal[]) => void;
   max: number;
   disabled?: boolean;
+  titulo?: string; // texto del recuadro para sumar (por defecto "Sumar fotos")
+  ayuda?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
 
@@ -83,9 +81,9 @@ export function FotosInput({
             <IconoCamara />
           </span>
           <span>
-            <b className="text-foreground">{fotos.length === 0 ? "Sumar fotos" : "Sumar otra foto"}</b>
+            <b className="text-foreground">{fotos.length === 0 ? (titulo ?? "Sumar fotos") : "Sumar otra foto"}</b>
             <br />
-            Así saben qué buscar cuando llegan
+            {ayuda}
           </span>
           <input
             ref={input}

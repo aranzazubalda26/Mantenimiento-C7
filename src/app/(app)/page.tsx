@@ -1,32 +1,24 @@
 import Link from "next/link";
 import { AppHeader, Pagina } from "@/components/app-header";
-import { IconoAlerta, IconoFlecha, IconoMas, IconoOk, IconoTareas } from "@/components/iconos";
-import { TarjetaEscuela, type OrdenResumida } from "@/components/tarjeta-escuela";
+import { IconoAlerta, IconoMas, IconoOk, IconoTareas } from "@/components/iconos";
+import { TableroEscuelas, cargarTablero } from "@/components/tablero-escuelas";
+import type { OrdenResumida } from "@/components/tarjeta-escuela";
 import { getUsuario, puedeCrearOrdenes } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { TareasSupervisor } from "./tareas-supervisor";
 
-// Inicio: tablero de escuelas + resumen. El listado de ordenes esta en /ordenes
-export default async function Home() {
+// Inicio. Supervisor/a: su lista de tareas. Admin e inspector/a: tablero de escuelas + resumen.
+// El listado completo de ordenes esta en /ordenes
+export default async function Home(props: PageProps<"/">) {
   const usuario = await getUsuario();
-  const supabase = await createClient();
-  const esAdmin = usuario.rol === "admin";
-
-  // Escuelas del tablero: el admin ve todas; el resto, las asignadas
-  let qEscuelas = supabase.from("escuelas").select("id, direccion, nombre").eq("activa", true).order("id");
-  if (!esAdmin) {
-    qEscuelas = qEscuelas.or(`inspector_id.eq.${usuario.id},supervisor_id.eq.${usuario.id}`);
+  if (usuario.rol === "supervisor") {
+    const { escuela } = await props.searchParams;
+    return <TareasSupervisor usuario={usuario} escuela={typeof escuela === "string" ? escuela : null} />;
   }
 
-  // RLS filtra las ordenes: el admin todas; supervisor/inspector las de sus escuelas
-  const [{ data: todas }, { data: escuelas }] = await Promise.all([
-    supabase
-      .from("ordenes_trabajo")
-      .select("id, escuela_id, estado, prioridad, descripcion, ubicacion, created_at, motivo_reapertura")
-      .returns<OrdenResumida[]>(),
-    qEscuelas,
-  ]);
-
-  const ordenes = todas ?? [];
+  const supabase = await createClient();
+  const esAdmin = usuario.rol === "admin";
+  const { ordenes, escuelas } = await cargarTablero(supabase, usuario);
   const cuenta = (f: (o: OrdenResumida) => boolean) => ordenes.filter(f).length;
   const nUrgentes = cuenta((o) => o.estado === "solicitada" && o.prioridad === "urgente");
   const nPendientes = cuenta((o) => o.estado === "solicitada");
@@ -77,32 +69,7 @@ export default async function Home() {
               ))}
             </div>
 
-            <section className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold tracking-[-0.01em]">
-                  {esAdmin ? "Escuelas" : "Mis escuelas"}
-                  <span className="ml-2 text-sm font-normal text-muted">{escuelas?.length ?? 0}</span>
-                </h2>
-                {esAdmin && (
-                  <Link href="/admin/escuelas" className="flex min-h-8 items-center gap-1 text-[13.5px] font-medium text-primary hover:underline">
-                    Administrar
-                    <IconoFlecha className="size-3.5" />
-                  </Link>
-                )}
-              </div>
-
-              {!escuelas?.length ? (
-                <p className="tarjeta px-5 py-10 text-center text-muted">
-                  {esAdmin ? "Todavía no hay escuelas cargadas." : "No tenés escuelas asignadas."}
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 gap-2.5 sm:items-start sm:gap-3.5">
-                  {escuelas.map((e) => (
-                    <TarjetaEscuela key={e.id} escuela={e} ordenes={ordenes.filter((o) => o.escuela_id === e.id)} />
-                  ))}
-                </div>
-              )}
-            </section>
+            <TableroEscuelas escuelas={escuelas} ordenes={ordenes} esAdmin={esAdmin} origen="/" />
 
           </>
         )}

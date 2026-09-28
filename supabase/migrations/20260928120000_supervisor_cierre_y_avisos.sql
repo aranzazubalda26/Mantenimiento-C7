@@ -618,10 +618,10 @@ create trigger ordenes_trabajo_avisar_borrado
 -- ---------------------------------------------------------------------------
 -- Abrir una orden: marca sus avisos como leidos y, si es el supervisor/a de la
 -- escuela y la orden esta pendiente, registra "vista" (una vez desde que se
--- cargo o se reabrio).
+-- cargo o se reabrio). Devuelve true si cambio algo (para refrescar la pantalla).
 -- ---------------------------------------------------------------------------
 create or replace function public.abrir_orden(p_id bigint)
-returns void
+returns boolean
 language plpgsql
 security definer
 set search_path = ''
@@ -630,16 +630,18 @@ declare
   v_uid uuid := auth.uid();
   v_estado text;
   v_supervisor uuid;
+  v_leidos int;
 begin
   if v_uid is null or private.rol() is null then
-    return;
+    return false;
   end if;
 
   update public.avisos set leido_at = now()
   where destinatario = v_uid and orden_id = p_id and leido_at is null;
+  get diagnostics v_leidos = row_count;
 
   if private.rol() <> 'supervisor' then
-    return;
+    return v_leidos > 0;
   end if;
 
   -- Dos pestañas abiertas a la vez no registran dos veces
@@ -659,7 +661,9 @@ begin
       )
   ) then
     insert into public.orden_eventos (orden_id, tipo, autor) values (p_id, 'vista', v_uid);
+    return true;
   end if;
+  return v_leidos > 0;
 end;
 $$;
 

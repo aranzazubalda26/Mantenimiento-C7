@@ -10,6 +10,11 @@ export function haceDiasISO(dias: number) {
   return new Date(Date.now() - dias * 864e5).toLocaleDateString("en-CA", { timeZone: TZ });
 }
 
+// Momento de hace `dias` dias (ISO, para comparar con columnas timestamptz)
+export function momentoHaceDias(dias: number) {
+  return new Date(Date.now() - dias * 864e5).toISOString();
+}
+
 // "Sábado 26 de septiembre" (para el encabezado)
 export function fechaLarga() {
   const partes = new Intl.DateTimeFormat("es-AR", {
@@ -77,4 +82,15 @@ export function formatHora(ts: string) {
 // "26/09/2026 a las 18:22"
 export function formatFechaHora(ts: string) {
   return `${formatFechaDe(ts)} a las ${formatHora(ts)}`;
+}
+
+// Antiguedad de un momento: "hoy", "ayer", "hace 3 días" (dias calendario en Argentina)
+export function hace(ts: string) {
+  const dia = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
+  const delta = Math.round(
+    (new Date(`${dia(new Date())}T12:00:00Z`).getTime() - new Date(`${dia(new Date(ts))}T12:00:00Z`).getTime()) / 864e5,
+  );
+  if (delta <= 0) return "hoy";
+  if (delta === 1) return "ayer";
+  return `hace ${delta} días`;
 }

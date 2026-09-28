@@ -22,9 +22,11 @@ const MUESTRA = 3; // cuantas tareas pendientes se ven en la tarjeta
 export function TarjetaEscuela({
   escuela,
   ordenes,
+  origen = "/",
 }: {
   escuela: { id: number; direccion: string; nombre: string | null };
   ordenes: OrdenResumida[]; // todas las ordenes de esta escuela
+  origen?: string; // pantalla del tablero, para el "Volver a …" de las ordenes
 }) {
   const pendientes = ordenes
     .filter((o) => o.estado === "solicitada")
@@ -88,7 +90,7 @@ export function TarjetaEscuela({
               {pendientes.slice(0, MUESTRA).map((o) => (
                 <li key={o.id}>
                   <Link
-                    href={conVolver(`/ordenes/${o.id}`, "/")}
+                    href={conVolver(`/ordenes/${o.id}`, origen)}
                     className={`flex items-center gap-2.5 px-[18px] py-2.5 hover:bg-fila-hover ${esReabierta(o) ? BORDE_REABIERTA : ""}`}
                   >
                     <span className="min-w-0 flex-1">
